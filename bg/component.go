@@ -29,25 +29,40 @@ func (c *BasicComponent) Run(ctx context.Context, wg *sync.WaitGroup) {
 	go func() {
 		defer wg.Done()
 		for {
-			select {
-			case <-ctx.Done():
+			selectCases := make([]reflect.SelectCase, len(c.InChannel)+2)
+			for i, ch := range c.InChannel {
+				selectCases[i] = reflect.SelectCase{
+					Dir:  reflect.SelectRecv,
+					Chan: reflect.ValueOf(ch),
+				}
+			}
+			// Add a case for ctx.Done() to stop the component gracefully
+			selectCases[len(c.InChannel)] = reflect.SelectCase{
+				Dir:  reflect.SelectRecv,
+				Chan: reflect.ValueOf(ctx.Done()),
+			}
+
+			// Add a case for c.SuperChannel to handle supervisor signals
+			selectCases[len(c.InChannel)+1] = reflect.SelectCase{
+				Dir:  reflect.SelectRecv,
+				Chan: reflect.ValueOf(c.SuperChannel),
+			}
+
+			chosen, value, ok := reflect.Select(selectCases)
+			switch chosen {
+			case len(c.InChannel): // ctx.Done() case
 				fmt.Printf("Component %s stopped due to cancellation\n", c.Name)
-				return
-			case msg := <-c.SuperChannel:
+				//return
+			case len(c.InChannel) + 1: // c.SuperChannel case
+				if !ok {
+					fmt.Printf("Component %s received from closed SuperChannel\n", c.Name)
+					continue
+				}
+				msg := value.String()
 				fmt.Printf("Component %s received signal from supervisor: %s\n", c.Name, msg)
 				// Example: Handle supervisor signal
-				c.ProcessReq(ctx)
+				// c.ProcessReq(ctx)
 			default:
-				// Listen on all InChannels using a dynamic select
-				selectCases := make([]reflect.SelectCase, len(c.InChannel))
-				for i, ch := range c.InChannel {
-					selectCases[i] = reflect.SelectCase{
-						Dir:  reflect.SelectRecv,
-						Chan: reflect.ValueOf(ch),
-					}
-				}
-				// Perform the select on all InChannels
-				_, value, ok := reflect.Select(selectCases)
 				if !ok {
 					fmt.Printf("Component %s received from closed channel\n", c.Name)
 					continue
@@ -61,6 +76,7 @@ func (c *BasicComponent) Run(ctx context.Context, wg *sync.WaitGroup) {
 
 // ProcessReq processes requests, checking for context cancellation.
 func (c *BasicComponent) ProcessReq(ctx context.Context) {
+	c.OutChannel[0] <- "Start Processing"
 	select {
 	case <-ctx.Done():
 		fmt.Printf("Component %s stopping request processing due to cancellation\n", c.Name)

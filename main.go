@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"time"
+	"fmt"
 
 	"github.com/Rajath07/blue-green-architecture-support/bg"
 )
@@ -23,17 +23,13 @@ func main() {
 
 	// Initialize and run components
 	components := bg.InitializeComponents(ctx, supervisor, names, dependencies)
+	fmt.Println("Components initialized")
 
-	// Simulate sending a signal to each component's supervisor channel
-	time.Sleep(1 * time.Second)
-	for _, name := range names {
-		supervisor.GetChannel(name) <- "Start Processing"
-	}
+	components["ComponentA"].ProcessReq(ctx)
 
-	// Simulate a cancel signal after some time
-	time.Sleep(2 * time.Second)
-	cancel()
+	supervisor.GetChannel("ComponentA") <- "Start Processing"
+	//cancel()
+	components["ComponentA"].ProcessReq(ctx)
 
-	// Wait for all components to finish
-	// (This is handled within the InitializeComponents function)
+	components["ComponentA"].ProcessReq(ctx)
 }
