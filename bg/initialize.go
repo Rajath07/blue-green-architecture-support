@@ -22,7 +22,7 @@ func InitializeComponents(ctx context.Context, supervisor *Supervisor, names []s
 			Name:         name,
 			InChannel:    []chan string{},
 			OutChannel:   []chan string{},
-			SuperChannel: supervisor.Channel,
+			SuperChannel: supervisor.GetChannel(name),
 		}
 	}
 
