@@ -13,23 +13,23 @@ func main() {
 	defer cancel()
 
 	// Define component names and dependencies
-	names := []string{"ComponentA", "ComponentB"}
+	compIds := []int{1, 2}
 	dependencies := []bg.Dependency{
-		{Child: "ComponentB", Parent: "ComponentA"},
+		{Child: 2, Parent: 1},
 	}
 
 	// Create the supervisor
-	supervisor := bg.NewSupervisor(names)
+	supervisor := bg.NewSupervisor(compIds)
 
 	// Initialize and run components
-	components := bg.InitializeComponents(ctx, supervisor, names, dependencies)
+	components := bg.InitializeComponents(ctx, supervisor, compIds, dependencies)
 	fmt.Println("Components initialized")
 
-	components["ComponentA"].ProcessReq(ctx)
+	components[1].ProcessReq(ctx)
 
-	supervisor.GetChannel("ComponentA") <- "Start Processing"
+	supervisor.GetChannel(1) <- "Start Processing"
 	//cancel()
-	components["ComponentA"].ProcessReq(ctx)
+	components[1].ProcessReq(ctx)
 
-	components["ComponentA"].ProcessReq(ctx)
+	components[1].ProcessReq(ctx)
 }

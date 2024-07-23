@@ -7,22 +7,22 @@ import (
 
 // Dependency represents a single dependency relationship between components.
 type Dependency struct {
-	Child  string
-	Parent string
+	Child  int
+	Parent int
 }
 
 // InitializeComponents initializes and starts the supervisor and components based on dependencies.
-func InitializeComponents(ctx context.Context, supervisor *Supervisor, names []string, dependencies []Dependency) map[string]Component {
+func InitializeComponents(ctx context.Context, supervisor *Supervisor, compIds []int, dependencies []Dependency) map[int]Component {
 	var wg sync.WaitGroup
-	components := make(map[string]Component)
+	components := make(map[int]Component)
 
 	// Create components
-	for _, name := range names {
-		components[name] = &BasicComponent{
-			Name:         name,
+	for _, compId := range compIds {
+		components[compId] = &BasicComponent{
+			CompId:       compId,
 			InChannel:    []chan string{},
 			OutChannel:   []chan string{},
-			SuperChannel: supervisor.GetChannel(name),
+			SuperChannel: supervisor.GetChannel(compId),
 		}
 	}
 

@@ -17,7 +17,7 @@ type Component interface {
 
 // BasicComponent represents a single component with channels and implements the Component interface.
 type BasicComponent struct {
-	Name         string
+	CompId       int
 	InChannel    []chan string
 	OutChannel   []chan string
 	SuperChannel chan string
@@ -51,24 +51,24 @@ func (c *BasicComponent) Run(ctx context.Context, wg *sync.WaitGroup) {
 			chosen, value, ok := reflect.Select(selectCases)
 			switch chosen {
 			case len(c.InChannel): // ctx.Done() case
-				fmt.Printf("Component %s stopped due to cancellation\n", c.Name)
+				fmt.Printf("Component %d stopped due to cancellation\n", c.CompId)
 				//return
 			case len(c.InChannel) + 1: // c.SuperChannel case
 				if !ok {
-					fmt.Printf("Component %s received from closed SuperChannel\n", c.Name)
+					fmt.Printf("Component %d received from closed SuperChannel\n", c.CompId)
 					continue
 				}
 				msg := value.String()
-				fmt.Printf("Component %s received signal from supervisor: %s\n", c.Name, msg)
+				fmt.Printf("Component %d received signal from supervisor: %s\n", c.CompId, msg)
 				// Example: Handle supervisor signal
 				// c.ProcessReq(ctx)
 			default:
 				if !ok {
-					fmt.Printf("Component %s received from closed channel\n", c.Name)
+					fmt.Printf("Component %d received from closed channel\n", c.CompId)
 					continue
 				}
 				msg := value.String()
-				fmt.Printf("Component %s received message: %s\n", c.Name, msg)
+				fmt.Printf("Component %d received message: %s\n", c.CompId, msg)
 			}
 		}
 	}()
@@ -79,10 +79,10 @@ func (c *BasicComponent) ProcessReq(ctx context.Context) {
 	c.OutChannel[0] <- "Start Processing"
 	select {
 	case <-ctx.Done():
-		fmt.Printf("Component %s stopping request processing due to cancellation\n", c.Name)
+		fmt.Printf("Component %d stopping request processing due to cancellation\n", c.CompId)
 		return
 	default:
-		fmt.Printf("Component %s processing request\n", c.Name)
+		fmt.Printf("Component %d processing request\n", c.CompId)
 		// Example: Actual processing logic
 	}
 }
@@ -91,10 +91,10 @@ func (c *BasicComponent) ProcessReq(ctx context.Context) {
 func (c *BasicComponent) CancelReq(ctx context.Context) {
 	select {
 	case <-ctx.Done():
-		fmt.Printf("Component %s stopping request cancellation due to cancellation\n", c.Name)
+		fmt.Printf("Component %d stopping request cancellation due to cancellation\n", c.CompId)
 		return
 	default:
-		fmt.Printf("Component %s cancelling request\n", c.Name)
+		fmt.Printf("Component %d cancelling request\n", c.CompId)
 		// Example: Actual cancellation logic
 	}
 }
@@ -103,10 +103,10 @@ func (c *BasicComponent) CancelReq(ctx context.Context) {
 func (c *BasicComponent) SyncReq(ctx context.Context) {
 	select {
 	case <-ctx.Done():
-		fmt.Printf("Component %s stopping request update due to cancellation\n", c.Name)
+		fmt.Printf("Component %d stopping request update due to cancellation\n", c.CompId)
 		return
 	default:
-		fmt.Printf("Component %s updating request\n", c.Name)
+		fmt.Printf("Component %d updating request\n", c.CompId)
 		// Example: Actual update logic
 	}
 }
