@@ -14,20 +14,24 @@ func main() {
 	defer cancel()
 
 	// Define component names and dependencies
-	compIds := []int{1, 2, 3}
+	compIds := []int{1, 2, 3, 4}
 	dependencies := []bg.Dependency{
 		{Child: 2, Parent: 1},
 		{Child: 3, Parent: 1},
+		{Child: 4, Parent: 2},
 	}
 
 	// Create the supervisor
 	//supervisor := bg.NewSupervisor(compIds)
+	customComp := &Comp1{}
 
 	// Initialize and run components
-	components := bg.InitializeComponents(ctx, compIds, dependencies)
-	fmt.Println("Components initialized", components)
+	components := bg.InitializeComponents(ctx, compIds, dependencies, customComp)
+	fmt.Println("Components initialized ", components)
 
-	components[1].ProcessReq(ctx)
+	// components[1].ProcessReq(ctx)
+	// components[2].ProcessReq(ctx)
+	//components[10].ProcessReq(ctx)
 	time.Sleep(5 * time.Second)
 
 	//supervisor.GetChannel(1) <- "Start Processing"

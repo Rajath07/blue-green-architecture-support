@@ -8,6 +8,7 @@ import (
 
 // Component interface defines the behavior that all components must implement.
 type Component interface {
+	init(compId int, inChannel chan string, outChannel []chan string)
 	Run(ctx context.Context, wg *sync.WaitGroup)
 	ProcessReq(ctx context.Context)
 	CancelReq(ctx context.Context)
@@ -20,6 +21,12 @@ type BasicComponent struct {
 	InChannel  chan string
 	OutChannel []chan string
 	//SuperChannel chan string
+}
+
+func (c *BasicComponent) init(compId int, inChannel chan string, outChannel []chan string) {
+	c.CompId = compId
+	c.InChannel = inChannel
+	c.OutChannel = outChannel
 }
 
 // Run starts the component's main execution loop.

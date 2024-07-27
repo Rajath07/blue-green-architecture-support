@@ -3,6 +3,8 @@ package bg
 import (
 	"context"
 	"sync"
+	// "os"
+	// "gopkg.in/yaml.v2"
 )
 
 // Dependency represents a single dependency relationship between components.
@@ -11,8 +13,19 @@ type Dependency struct {
 	Parent int
 }
 
+// // ComponentConfig represents a component configuration.
+// type ComponentConfig struct {
+// 	Name string `yaml:"name"`
+// }
+
+// // Configuration represents the overall YAML configuration.
+// type Configuration struct {
+// 	Components   []ComponentConfig `yaml:"components"`
+// 	Dependencies []Dependency      `yaml:"dependencies"`
+// }
+
 // InitializeComponents initializes and starts the components based on dependencies.
-func InitializeComponents(ctx context.Context, compIds []int, dependencies []Dependency) map[int]Component {
+func InitializeComponents(ctx context.Context, compIds []int, dependencies []Dependency, userComp Component) map[int]Component {
 	var wg sync.WaitGroup
 	components := make(map[int]Component)
 
@@ -30,10 +43,13 @@ func InitializeComponents(ctx context.Context, compIds []int, dependencies []Dep
 	for _, dep := range dependencies {
 		parent := components[dep.Parent].(*BasicComponent)
 		child := components[dep.Child].(*BasicComponent)
-		//newChannel := make(chan string)
 		parent.OutChannel = append(parent.OutChannel, child.InChannel)
-		//child.InChannel = append(child.InChannel, newChannel)
 	}
+	// testOutChannel := []chan string{}
+	// testOutChannel = append(testOutChannel, components[1].(*BasicComponent).InChannel)
+	// comp.init(10, make(chan string), testOutChannel)
+	// comp.Run(ctx, &wg)
+	// components[10] = comp
 
 	// Start all components with the context
 	for _, component := range components {
@@ -47,3 +63,21 @@ func InitializeComponents(ctx context.Context, compIds []int, dependencies []Dep
 
 	return components
 }
+
+// LoadConfig loads the configuration from a YAML file
+// func LoadConfig(configFile string) (*Configuration, error) {
+// 	file, err := os.Open(configFile)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer file.Close()
+
+// 	var config Configuration
+// 	decoder := yaml.NewDecoder(file)
+// 	err = decoder.Decode(&config)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	return &config, nil
+// }
