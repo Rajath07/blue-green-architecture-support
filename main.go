@@ -21,6 +21,12 @@ func main() {
 		{Child: 4, Parent: 2},
 	}
 
+	data, err := bg.ParseYAML("dependency.yaml")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(data)
+
 	// Create the supervisor
 	//supervisor := bg.NewSupervisor(compIds)
 	customComp := &Comp1{}
@@ -29,7 +35,7 @@ func main() {
 	components := bg.InitializeComponents(ctx, compIds, dependencies, customComp)
 	fmt.Println("Components initialized ", components)
 
-	// components[1].ProcessReq(ctx)
+	components[1].ProcessReq(ctx)
 	// components[2].ProcessReq(ctx)
 	//components[10].ProcessReq(ctx)
 	time.Sleep(5 * time.Second)

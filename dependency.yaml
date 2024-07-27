@@ -1,0 +1,14 @@
+components:
+  component1:
+    - component2
+    - component3
+    - component4
+    - componentA
+  component2:
+    - component4
+  component3:
+    -  # no children
+  component4:
+    - componentA
+  componentA:
+    -  # no children

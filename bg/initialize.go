@@ -25,7 +25,7 @@ type Dependency struct {
 // }
 
 // InitializeComponents initializes and starts the components based on dependencies.
-func InitializeComponents(ctx context.Context, compIds []int, dependencies []Dependency, userComp Component) map[int]Component {
+func InitializeComponents(ctx context.Context, compIds []int, dependencies []Dependency, userComps Component) map[int]Component {
 	var wg sync.WaitGroup
 	components := make(map[int]Component)
 
