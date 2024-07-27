@@ -60,8 +60,6 @@ func (c *BasicComponent) Run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 				msg := value.String()
 				fmt.Printf("Component %d received signal from supervisor: %s\n", c.CompId, msg)
-				// Example: Handle supervisor signal
-				// c.ProcessReq(ctx)
 			default:
 				if !ok {
 					fmt.Printf("Component %d received from closed channel\n", c.CompId)
@@ -99,7 +97,7 @@ func (c *BasicComponent) CancelReq(ctx context.Context) {
 	}
 }
 
-// UpdateReq is a placeholder for the user-defined request update method.
+// SyncReq is a placeholder for the user-defined request update method.
 func (c *BasicComponent) SyncReq(ctx context.Context) {
 	select {
 	case <-ctx.Done():

@@ -11,7 +11,7 @@ type Dependency struct {
 	Parent int
 }
 
-// InitializeComponents initializes and starts the supervisor and components based on dependencies.
+// InitializeComponents initializes and starts the components based on dependencies.
 func InitializeComponents(ctx context.Context, supervisor *Supervisor, compIds []int, dependencies []Dependency) map[int]Component {
 	var wg sync.WaitGroup
 	components := make(map[int]Component)
