@@ -12,30 +12,26 @@ func main() {
 	// Create a context for cancellation
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-
-	// Define component names and dependencies
-	compIds := []int{1, 2, 3, 4}
-	dependencies := []bg.Dependency{
-		{Child: 2, Parent: 1},
-		{Child: 3, Parent: 1},
-		{Child: 4, Parent: 2},
-	}
-
-	data, err := bg.ParseYAML("dependency.yaml")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(data)
+	// data, err := bg.ParseYAML("dependency.yaml")
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// fmt.Println(data)
 
 	// Create the supervisor
 	//supervisor := bg.NewSupervisor(compIds)
-	customComp := &Comp1{}
+	compCollec := []bg.Component{}
+	customComp1 := &Comp1{}
+	customComp2 := &Comp2{}
+	compCollec = append(compCollec, customComp1)
+	compCollec = append(compCollec, customComp2)
 
 	// Initialize and run components
-	components := bg.InitializeComponents(ctx, compIds, dependencies, customComp)
+	components := bg.InitializeComponents(ctx, "dependency.yaml", compCollec)
 	fmt.Println("Components initialized ", components)
+	components["Comp1"].ProcessReq(ctx)
 
-	components[1].ProcessReq(ctx)
+	//components[1].ProcessReq(ctx)
 	// components[2].ProcessReq(ctx)
 	//components[10].ProcessReq(ctx)
 	time.Sleep(5 * time.Second)

@@ -7,20 +7,19 @@ import (
 	"github.com/Rajath07/blue-green-architecture-support/bg"
 )
 
-type Comp1 struct {
+type Comp2 struct {
 	bg.BasicComponent
 }
 
-func (c *Comp1) ProcessReq(ctx context.Context) {
-	c.OutChannel[0] <- "Start Processing"
+func (c *Comp2) ProcessReq(ctx context.Context) {
 	fmt.Println("Printing my customComp ID ", c.CompId)
-	fmt.Println("Comp1 processing from userdefined")
+	fmt.Println("Comp2 processing from userdefined")
 }
 
-func (c *Comp1) SyncReq(ctx context.Context) {
+func (c *Comp2) SyncReq(ctx context.Context) {
 	fmt.Printf("Comp1 syncing from userdefined")
 }
 
-func (c *Comp1) CancelReq(ctx context.Context) {
+func (c *Comp2) CancelReq(ctx context.Context) {
 	fmt.Printf("Comp1 cancelling from userdefined")
 }
