@@ -11,7 +11,7 @@ type Component interface {
 	init(compId int, inChannel chan string)
 	initOutChan(outChannel []chan string)
 	getInChan() chan string
-	Run(ctx context.Context, wg *sync.WaitGroup)
+	run(ctx context.Context, wg *sync.WaitGroup)
 	ProcessReq(ctx context.Context)
 	CancelReq(ctx context.Context)
 	SyncReq(ctx context.Context)
@@ -39,7 +39,7 @@ func (c *BasicComponent) getInChan() chan string {
 }
 
 // Run starts the component's main execution loop.
-func (c *BasicComponent) Run(ctx context.Context, wg *sync.WaitGroup) {
+func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()

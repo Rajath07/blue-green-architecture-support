@@ -66,11 +66,11 @@ func transitiveReduction(g *simple.DirectedGraph) {
 	}
 }
 
-func ParseYAML(filePath string) (map[int64][]int64, error) {
+func ParseYAML(filePath string) (*simple.DirectedGraph, map[int64][]int64, error) {
 	// Read the YAML file
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Unmarshal YAML data into a Go struct
@@ -120,7 +120,7 @@ func ParseYAML(filePath string) (map[int64][]int64, error) {
 	// Create new dependency map from the reduced graph
 	reducedDependencyMap := createDependencyMap(graph)
 	//fmt.Println("\nNew Dependency Map: ", reducedDependencyMap)
-	return reducedDependencyMap, nil
+	return graph, reducedDependencyMap, nil
 
 }
 
