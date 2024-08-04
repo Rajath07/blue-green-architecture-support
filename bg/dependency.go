@@ -94,10 +94,10 @@ func ParseYAML(filePath string) (*simple.DirectedGraph, map[int64][]int64, error
 
 	for key, child := range dependencies.Components {
 		if len(child) == 0 {
-			ComponentDependencyID[getComponentId(key)] = []int{}
+			//ComponentDependencyID[getComponentId(key)] = []int{}
 		} else {
 			for _, childComp := range child {
-				ComponentDependencyID[getComponentId(key)] = append(ComponentDependencyID[getComponentId(key)], getComponentId(childComp))
+				ComponentDependencyID[getComponentId(childComp)] = append(ComponentDependencyID[getComponentId(childComp)], getComponentId(key))
 			}
 		}
 	}
@@ -115,8 +115,8 @@ func ParseYAML(filePath string) (*simple.DirectedGraph, map[int64][]int64, error
 
 	//printGraph(graph)
 	transitiveReduction(graph)
-	//fmt.Println("\nTransitive Reduction Graph:")
-	//printGraph(graph)
+	fmt.Println("\nTransitive Reduction Graph:")
+	printGraph(graph)
 	// Create new dependency map from the reduced graph
 	reducedDependencyMap := createDependencyMap(graph)
 	//fmt.Println("\nNew Dependency Map: ", reducedDependencyMap)

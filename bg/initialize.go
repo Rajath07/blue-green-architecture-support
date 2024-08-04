@@ -6,15 +6,8 @@ import (
 	"reflect"
 	"sync"
 
-	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 )
-
-// Dependency represents a single dependency relationship between components.
-type Dependency struct {
-	Child  int
-	Parent int
-}
 
 type CompositeKey struct {
 	myId   int
@@ -22,7 +15,6 @@ type CompositeKey struct {
 }
 
 var waitingCount = make(map[CompositeKey]int)
-var graphNodes []graph.Node
 
 // InitializeComponents initializes and starts the components based on dependencies.
 func InitializeComponents(ctx context.Context, filePath string, userComps []Component) map[string]Component {
@@ -94,6 +86,7 @@ func CountPaths(g *simple.DirectedGraph) {
 			DFSWithMemoization(g, nodeID, memo)
 		}
 	}
+	fmt.Print("Memo ", memo)
 
 	// Populate the waitingCount map with the results from the memoization map
 	for node, ancestors := range memo {

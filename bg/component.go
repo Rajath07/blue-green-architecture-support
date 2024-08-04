@@ -51,45 +51,6 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 			case msg := <-c.InChannel:
 				fmt.Printf("Component %d received message: %s\n", c.CompId, msg)
 			}
-			// selectCases := make([]reflect.SelectCase, len(c.InChannel)+2)
-			// for i, ch := range c.InChannel {
-			// 	selectCases[i] = reflect.SelectCase{
-			// 		Dir:  reflect.SelectRecv,
-			// 		Chan: reflect.ValueOf(ch),
-			// 	}
-			// }
-			// // Add a case for ctx.Done() to stop the component gracefully
-			// selectCases[len(c.InChannel)] = reflect.SelectCase{
-			// 	Dir:  reflect.SelectRecv,
-			// 	Chan: reflect.ValueOf(ctx.Done()),
-			// }
-
-			// // Add a case for c.SuperChannel to handle supervisor signals
-			// selectCases[len(c.InChannel)+1] = reflect.SelectCase{
-			// 	Dir:  reflect.SelectRecv,
-			// 	Chan: reflect.ValueOf(c.SuperChannel),
-			// }
-
-			// chosen, value, ok := reflect.Select(selectCases)
-			// switch chosen {
-			// case len(c.InChannel): // ctx.Done() case
-			// 	fmt.Printf("Component %d stopped due to cancellation\n", c.CompId)
-			// 	//return
-			// case len(c.InChannel) + 1: // c.SuperChannel case
-			// 	if !ok {
-			// 		fmt.Printf("Component %d received from closed SuperChannel\n", c.CompId)
-			// 		continue
-			// 	}
-			// 	msg := value.String()
-			// 	fmt.Printf("Component %d received signal from supervisor: %s\n", c.CompId, msg)
-			// default:
-			// 	if !ok {
-			// 		fmt.Printf("Component %d received from closed channel\n", c.CompId)
-			// 		continue
-			// 	}
-			// 	msg := value.String()
-			// 	fmt.Printf("Component %d received message: %s\n", c.CompId, msg)
-			// }
 		}
 	}()
 }

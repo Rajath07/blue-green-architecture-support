@@ -1,10 +1,12 @@
 components:
   Comp1:
-    - Comp2
   Comp2:
-  # component3:
-  #   -  # no children
-  # component4:
-  #   - componentA
-  # componentA:
-  #   -  # no children
+    - Comp1
+  Comp3:
+    - Comp2
+  Comp4:
+    - Comp2
+  Comp5:
+    - Comp2
+    - Comp3
+    - Comp4
