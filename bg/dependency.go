@@ -7,8 +7,6 @@ import (
 	"gonum.org/v1/gonum/graph/simple"
 	"gopkg.in/yaml.v2"
 
-	"gonum.org/v1/gonum/graph/traverse"
-
 	"gonum.org/v1/gonum/graph"
 )
 
@@ -42,26 +40,60 @@ func createDependencyMap(g *simple.DirectedGraph) map[int64][]int64 {
 }
 
 func transitiveReduction(g *simple.DirectedGraph) {
+	// Step 1: Compute the reachability matrix using Floyd-Warshall algorithm
+	n := g.Nodes().Len()
+	reach := make([][]bool, n)
+	for i := range reach {
+		reach[i] = make([]bool, n)
+	}
+
+	nodes := g.Nodes()
+	nodeIndex := make(map[int64]int)
+	indexNode := make([]graph.Node, n)
+	i := 0
+	for nodes.Next() {
+		node := nodes.Node()
+		nodeIndex[node.ID()] = i
+		indexNode[i] = node
+		i++
+	}
+
 	edges := g.Edges()
 	for edges.Next() {
 		edge := edges.Edge()
-		from := edge.From()
-		to := edge.To()
+		from := nodeIndex[edge.From().ID()]
+		to := nodeIndex[edge.To().ID()]
+		reach[from][to] = true
+	}
 
-		// Temporarily remove the edge
-		g.RemoveEdge(from.ID(), to.ID())
+	// Floyd-Warshall algorithm to find reachability
+	for k := 0; k < n; k++ {
+		for i := 0; i < n; i++ {
+			for j := 0; j < n; j++ {
+				reach[i][j] = reach[i][j] || (reach[i][k] && reach[k][j])
+			}
+		}
+	}
 
-		// Check if there is still a path from 'from' to 'to'
-		dfs := traverse.DepthFirst{}
-		visited := make(map[int64]bool)
-		dfs.Walk(g, from, func(n graph.Node) bool {
-			visited[n.ID()] = true
-			return false // continue walking
-		})
+	// Step 2: Identify and remove transitive edges
+	edges = g.Edges()
+	for edges.Next() {
+		edge := edges.Edge()
+		from := nodeIndex[edge.From().ID()]
+		to := nodeIndex[edge.To().ID()]
 
-		// If no path exists, re-add the edge
-		if !visited[to.ID()] {
-			g.SetEdge(edge)
+		// Check if there is an indirect path from 'from' to 'to'
+		transitive := false
+		for k := 0; k < n; k++ {
+			if k != from && k != to && reach[from][k] && reach[k][to] {
+				transitive = true
+				break
+			}
+		}
+
+		// If there is a transitive path, remove the edge
+		if transitive {
+			g.RemoveEdge(edge.From().ID(), edge.To().ID())
 		}
 	}
 }
