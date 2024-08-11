@@ -14,7 +14,8 @@ func main() {
 	defer cancel()
 
 	// Create the supervisor
-	//supervisor := bg.NewSupervisor(compIds)
+	// supervisor := bg.NewSupervisor(compIds)
+	// supervisor.
 	compCollec := []bg.Component{}
 	customComp1 := &Comp1{}
 	customComp2 := &Comp2{}
@@ -29,8 +30,9 @@ func main() {
 
 	// Initialize and run components
 	components := bg.InitializeComponents(ctx, "dependency.yaml", compCollec)
-	fmt.Println("Components initialized ", components)
-	components["Comp2"].ProcessReq(ctx)
+	fmt.Println("Components initialized ")
+	components.SendToAll()
+	//components["Comp2"].ProcessReq(ctx)
 
 	//components[1].ProcessReq(ctx)
 	// components[2].ProcessReq(ctx)

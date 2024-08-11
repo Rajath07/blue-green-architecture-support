@@ -2,7 +2,6 @@ package bg
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"sync"
 
@@ -17,25 +16,26 @@ type CompositeKey struct {
 var waitingCount = make(map[CompositeKey]int)
 
 // InitializeComponents initializes and starts the components based on dependencies.
-func InitializeComponents(ctx context.Context, filePath string, userComps []Component) map[string]Component {
+func InitializeComponents(ctx context.Context, filePath string, userComps []Component) *Supervisor {
 	var wg sync.WaitGroup
 	var structNames []string
 	var idStructMap = map[int]Component{}
 	var idInChanMap = make(map[int]chan string)
 	var compNameStructMap = map[string]Component{}
+	var superInChan = make(chan string)
 
 	// Parse the YAML file
 	redGraph, dependencies, err := ParseYAML(filePath)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Reduced graph ", dependencies)
+	//fmt.Println("Reduced graph ", dependencies)
 	CountPaths(redGraph)
-	fmt.Println("Waiting count ", waitingCount)
+	//fmt.Println("Waiting count ", waitingCount)
 	// Print the results
-	for key, count := range waitingCount {
-		fmt.Printf("Paths from node %d to node %d: %d\n", key.compId, key.myId, count)
-	}
+	// for key, count := range waitingCount {
+	// 	fmt.Printf("Paths from node %d to node %d: %d\n", key.compId, key.myId, count)
+	// }
 
 	// Assign IDs for components and store the names of the user defined structs
 	for _, comp := range userComps {
@@ -51,8 +51,10 @@ func InitializeComponents(ctx context.Context, filePath string, userComps []Comp
 	// Assign outChannels based on dependencies
 	for parent, children := range dependencies {
 		var childInChannels = []chan string{}
+		childInChannels = append(childInChannels, superInChan) // Connect the supervisor input channel
+
 		if len(children) == 0 {
-			idStructMap[int(parent)].initOutChan(nil)
+			idStructMap[int(parent)].initOutChan(nil) // If the parent has no children, set the outChannel to nil
 		} else {
 			for _, child := range children {
 				childInChannels = append(childInChannels, idStructMap[int(child)].getInChan())
@@ -60,6 +62,10 @@ func InitializeComponents(ctx context.Context, filePath string, userComps []Comp
 			idStructMap[int(parent)].initOutChan(childInChannels)
 		}
 	}
+
+	//Initialize the supervisor
+	supervisor := initSupervisor(superInChan, idStructMap)
+	supervisor.run(ctx, &wg)
 
 	// Start all components with the context
 	for _, component := range userComps {
@@ -71,7 +77,7 @@ func InitializeComponents(ctx context.Context, filePath string, userComps []Comp
 		wg.Wait()
 	}()
 
-	return compNameStructMap
+	return supervisor
 }
 
 // CountPaths calculates the number of paths from each node to its ancestors
@@ -86,7 +92,7 @@ func CountPaths(g *simple.DirectedGraph) {
 			DFSWithMemoization(g, nodeID, memo)
 		}
 	}
-	fmt.Print("Memo ", memo)
+	//fmt.Print("Memo ", memo)
 
 	// Populate the waitingCount map with the results from the memoization map
 	for node, ancestors := range memo {

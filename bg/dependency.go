@@ -14,8 +14,8 @@ type ComponentDependency struct {
 	Components map[string][]string `yaml:"components"`
 }
 
-var IdToComponent = map[int]string{}
-var ComponentToId = map[string]int{}
+var IdToComponent = map[int]string{} //Gives the component name (string)
+var ComponentToId = map[string]int{} //Gives the component id (int) when the name is passed
 
 func getComponentId(name string) int {
 	return ComponentToId[name]
@@ -147,8 +147,8 @@ func ParseYAML(filePath string) (*simple.DirectedGraph, map[int64][]int64, error
 
 	//printGraph(graph)
 	transitiveReduction(graph)
-	fmt.Println("\nTransitive Reduction Graph:")
-	printGraph(graph)
+	//fmt.Println("\nTransitive Reduction Graph:")
+	//printGraph(graph)
 	// Create new dependency map from the reduced graph
 	reducedDependencyMap := createDependencyMap(graph)
 	//fmt.Println("\nNew Dependency Map: ", reducedDependencyMap)
