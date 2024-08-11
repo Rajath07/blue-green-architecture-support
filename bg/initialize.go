@@ -22,9 +22,9 @@ func InitializeComponents(ctx context.Context, filePath string, userComps []Comp
 	var wg sync.WaitGroup
 	var structNames []string
 	var idStructMap = map[int]Component{}
-	var idInChanMap = make(map[int]chan string)
+	var idInChanMap = make(map[int]chan interface{})
 	//var compNameStructMap = map[string]Component{}
-	var superInChan = make(chan string)
+	var superInChan = make(chan interface{})
 
 	// Parse the YAML file
 	redGraph, dependencies, err := ParseYAML(filePath)
@@ -43,7 +43,7 @@ func InitializeComponents(ctx context.Context, filePath string, userComps []Comp
 	for _, comp := range userComps {
 		structName := reflect.TypeOf(comp).Elem().Name()
 		structNames = append(structNames, structName)
-		inChan := make(chan string)
+		inChan := make(chan interface{})
 		idInChanMap[getComponentId(structName)] = inChan
 		comp.init(getComponentId(structName), inChan)
 		idStructMap[getComponentId(structName)] = comp
@@ -52,7 +52,7 @@ func InitializeComponents(ctx context.Context, filePath string, userComps []Comp
 
 	// Assign outChannels based on dependencies
 	for parent, children := range dependencies {
-		var childInChannels = []chan string{}
+		var childInChannels = []chan interface{}{}
 		childInChannels = append(childInChannels, superInChan) // Connect the supervisor input channel
 
 		if len(children) == 0 {

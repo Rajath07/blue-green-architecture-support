@@ -14,8 +14,8 @@ type SupervisorInterface interface {
 // Supervisor represents the supervisor component that controls other components.
 type Supervisor struct {
 	CompId        int
-	InChannel     chan string
-	OutChannelMap map[int]chan string
+	InChannel     chan interface{}
+	OutChannelMap map[int]chan interface{}
 }
 
 // OperationType represents the type of operation for CRUD actions.
@@ -36,8 +36,8 @@ type Request[T any] struct {
 }
 
 // NewSupervisor creates a new supervisor with a channel.
-func initSupervisor(inChan chan string, idStructMap map[int]Component) *Supervisor {
-	var outChanMap = make(map[int]chan string)
+func initSupervisor(inChan chan interface{}, idStructMap map[int]Component) *Supervisor {
+	var outChanMap = make(map[int]chan interface{})
 	for id, comp := range idStructMap {
 		outChanMap[id] = comp.getInChan()
 	}
@@ -62,6 +62,17 @@ func (s *Supervisor) run(ctx context.Context, wg *sync.WaitGroup) {
 
 // SendReq sends a request to a component, specifying the operation and data.
 func (s *Supervisor) SendReq(componentName string, operation OperationType, data interface{}) {
-	s.OutChannelMap[getComponentId(componentName)] <- componentName
+	componentId := getComponentId(componentName)
+	req := Request[interface{}]{
+		ComponentName: componentName,
+		Operation:     operation,
+		Data:          data,
+	}
+	if outChan, ok := s.OutChannelMap[componentId]; ok {
+		outChan <- req
+		fmt.Printf("Sent request to component %s with operation %d and data %v\n", componentName, operation, data)
+	} else {
+		fmt.Printf("Component %s not found\n", componentName)
+	}
 
 }
