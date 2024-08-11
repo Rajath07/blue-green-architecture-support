@@ -12,8 +12,8 @@ type Comp2 struct {
 }
 
 func (c *Comp2) ProcessReq(ctx context.Context) {
-	c.OutChannel[0] <- "Start Processing"
-	c.OutChannel[1] <- "Start Processing"
+	// c.OutChannel[0] <- "Start Processing"
+	// c.OutChannel[1] <- "Start Processing"
 	fmt.Println("Printing my customComp ID ", c.CompId)
 	fmt.Println("Comp2 processing from userdefined")
 }

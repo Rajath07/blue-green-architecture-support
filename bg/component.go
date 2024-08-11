@@ -11,6 +11,7 @@ type Component interface {
 	init(compId int, inChannel chan string)
 	initOutChan(outChannel []chan string)
 	getInChan() chan string
+	sendSignal()
 	run(ctx context.Context, wg *sync.WaitGroup)
 	ProcessReq(ctx context.Context)
 	CancelReq(ctx context.Context)
@@ -50,9 +51,20 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 				return
 			case msg := <-c.InChannel:
 				fmt.Printf("Component %d received message: %s\n", c.CompId, msg)
+				compNameStructMap[msg].ProcessReq(ctx)
+				compNameStructMap[msg].sendSignal()
+
 			}
 		}
 	}()
+}
+
+func (c *BasicComponent) sendSignal() {
+	//fmt.Println(c.OutChannel)
+	//c.OutChannel[1] <- "Comp2"
+	// for _, outChan := range c.OutChannel {
+	// 	outChan <- "I am done"
+	// }
 }
 
 // ProcessReq processes requests, checking for context cancellation.

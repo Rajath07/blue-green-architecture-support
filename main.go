@@ -31,7 +31,7 @@ func main() {
 	// Initialize and run components
 	components := bg.InitializeComponents(ctx, "dependency.yaml", compCollec)
 	fmt.Println("Components initialized ")
-	components.SendToAll()
+	components.SendReq("Comp1", bg.Create, 10)
 	//components["Comp2"].ProcessReq(ctx)
 
 	//components[1].ProcessReq(ctx)

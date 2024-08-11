@@ -2,6 +2,7 @@ package bg
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"sync"
 
@@ -14,6 +15,7 @@ type CompositeKey struct {
 }
 
 var waitingCount = make(map[CompositeKey]int)
+var compNameStructMap = map[string]Component{}
 
 // InitializeComponents initializes and starts the components based on dependencies.
 func InitializeComponents(ctx context.Context, filePath string, userComps []Component) *Supervisor {
@@ -21,7 +23,7 @@ func InitializeComponents(ctx context.Context, filePath string, userComps []Comp
 	var structNames []string
 	var idStructMap = map[int]Component{}
 	var idInChanMap = make(map[int]chan string)
-	var compNameStructMap = map[string]Component{}
+	//var compNameStructMap = map[string]Component{}
 	var superInChan = make(chan string)
 
 	// Parse the YAML file
@@ -54,7 +56,7 @@ func InitializeComponents(ctx context.Context, filePath string, userComps []Comp
 		childInChannels = append(childInChannels, superInChan) // Connect the supervisor input channel
 
 		if len(children) == 0 {
-			idStructMap[int(parent)].initOutChan(nil) // If the parent has no children, set the outChannel to nil
+			idStructMap[int(parent)].initOutChan(childInChannels) // If the parent has no children, set the outChannel to nil
 		} else {
 			for _, child := range children {
 				childInChannels = append(childInChannels, idStructMap[int(child)].getInChan())
@@ -62,6 +64,7 @@ func InitializeComponents(ctx context.Context, filePath string, userComps []Comp
 			idStructMap[int(parent)].initOutChan(childInChannels)
 		}
 	}
+	fmt.Println(IdToComponent)
 
 	//Initialize the supervisor
 	supervisor := initSupervisor(superInChan, idStructMap)
