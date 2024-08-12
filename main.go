@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/Rajath07/blue-green-architecture-support/bg"
@@ -13,9 +12,6 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// Create the supervisor
-	// supervisor := bg.NewSupervisor(compIds)
-	// supervisor.
 	compCollec := []bg.Component{}
 	customComp1 := &Comp1{}
 	customComp2 := &Comp2{}
@@ -30,13 +26,7 @@ func main() {
 
 	// Initialize and run components
 	components := bg.InitializeComponents(ctx, "dependency.yaml", compCollec)
-	fmt.Println("Components initialized ")
-	components.SendReq("Comp5", bg.Create, 10, 0)
-	//components["Comp2"].ProcessReq(ctx)
-
-	//components[1].ProcessReq(ctx)
-	// components[2].ProcessReq(ctx)
-	//components[10].ProcessReq(ctx)
+	components.SendReq("Comp1", bg.Update, 10, 0)
 	time.Sleep(5 * time.Second)
 
 	//supervisor.GetChannel(1) <- "Start Processing"

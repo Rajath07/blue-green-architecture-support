@@ -43,6 +43,7 @@ func (c *BasicComponent) getInChan() chan interface{} {
 func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
+		var currCount int
 		defer wg.Done()
 		for {
 			select {
@@ -52,13 +53,31 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 			case msg := <-c.InChannel:
 				if request, ok := msg.(Request[interface{}]); ok {
 					fmt.Printf("Component %d received request: %v\n", c.CompId, request)
-					// Check if the component exists in the map
-					if component, exists := idStructMap[c.CompId]; exists {
-						component.ProcessReq(ctx)
-						component.sendSignal(request)
+					if request.SourceCompId == c.CompId {
+						if component, exists := idStructMap[c.CompId]; exists {
+							component.ProcessReq(ctx)
+							component.sendSignal(request)
+							currCount = 0
+						} else {
+							fmt.Printf("Component %s not found in map\n", request.ComponentName)
+						}
+
 					} else {
-						fmt.Printf("Component %s not found in map\n", request.ComponentName)
+						currCount++
+						if currCount == waitingCount[CompositeKey{myId: c.CompId, compId: request.SourceCompId}] {
+							// Check if the component exists in the map
+							if component, exists := idStructMap[c.CompId]; exists {
+								component.ProcessReq(ctx)
+								component.sendSignal(request)
+								currCount = 0
+							} else {
+								fmt.Printf("Component %s not found in map\n", request.ComponentName)
+							}
+						} else {
+							fmt.Println("Waiting")
+						}
 					}
+
 				} else {
 					fmt.Printf("Component %d received unknown message: %v\n", c.CompId, msg)
 				}

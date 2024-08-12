@@ -33,7 +33,7 @@ func InitializeComponents(ctx context.Context, filePath string, userComps []Comp
 	}
 	fmt.Println("Reduced graph ", dependencies)
 	CountPaths(redGraph)
-	//fmt.Println("Waiting count ", waitingCount)
+	fmt.Println("Waiting count ", waitingCount)
 	// Print the results
 	// for key, count := range waitingCount {
 	// 	fmt.Printf("Paths from node %d to node %d: %d\n", key.compId, key.myId, count)
