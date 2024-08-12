@@ -16,6 +16,8 @@ type Supervisor struct {
 	CompId        int
 	InChannel     chan interface{}
 	OutChannelMap map[int]chan interface{}
+	RequestQueue  []Request[interface{}]
+	QueueMutex    sync.Mutex // To protect access to the queue
 }
 
 // OperationType represents the type of operation for CRUD actions.
@@ -72,6 +74,14 @@ func (s *Supervisor) SendReq(componentName string, operation OperationType, data
 		Data:          data,
 		Index:         index,
 	}
+	// Lock the queue for thread-safe access
+	s.QueueMutex.Lock()
+	defer s.QueueMutex.Unlock()
+
+	// Enqueue the request
+	s.RequestQueue = append(s.RequestQueue, req)
+	fmt.Printf("Enqueued request for component %s \n", componentName)
+
 	if outChan, ok := s.OutChannelMap[componentId]; ok {
 		outChan <- req
 		fmt.Printf("Sent request to component %s with operation %d and data %v, index %d\n", componentName, operation, data, index)

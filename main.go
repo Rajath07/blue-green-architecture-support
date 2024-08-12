@@ -26,7 +26,8 @@ func main() {
 
 	// Initialize and run components
 	components := bg.InitializeComponents(ctx, "dependency.yaml", compCollec)
-	components.SendReq("Comp1", bg.Update, 10, 0)
+	components.SendReq("Comp5", bg.Update, 10, 0)
+	//components.SendReq("Comp4", bg.Create, 34, 0)
 	time.Sleep(5 * time.Second)
 
 	//supervisor.GetChannel(1) <- "Start Processing"
