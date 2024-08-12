@@ -31,7 +31,7 @@ func InitializeComponents(ctx context.Context, filePath string, userComps []Comp
 	if err != nil {
 		panic(err)
 	}
-	//fmt.Println("Reduced graph ", dependencies)
+	fmt.Println("Reduced graph ", dependencies)
 	CountPaths(redGraph)
 	//fmt.Println("Waiting count ", waitingCount)
 	// Print the results

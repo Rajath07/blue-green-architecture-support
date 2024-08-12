@@ -27,7 +27,14 @@ func getComponentName(id int) string {
 
 func createDependencyMap(g *simple.DirectedGraph) map[int64][]int64 {
 	newMap := make(map[int64][]int64)
+	// Initialize the map with all nodes to ensure each node is represented
+	nodes := g.Nodes()
+	for nodes.Next() {
+		node := nodes.Node()
+		newMap[node.ID()] = []int64{}
+	}
 
+	// Process the edges to fill in dependencies
 	edges := g.Edges()
 	for edges.Next() {
 		edge := edges.Edge()

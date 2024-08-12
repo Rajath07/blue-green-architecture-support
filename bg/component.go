@@ -69,7 +69,6 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (c *BasicComponent) sendSignal(req Request[interface{}]) {
-	//fmt.Println(c.OutChannel)
 	//c.OutChannel[1] <- "Comp2"
 	for _, outChan := range c.OutChannel {
 		outChan <- req
