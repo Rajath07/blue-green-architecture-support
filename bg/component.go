@@ -11,7 +11,7 @@ type Component interface {
 	init(compId int, inChannel chan interface{})
 	initOutChan(outChannel []chan interface{})
 	getInChan() chan interface{}
-	sendSignal()
+	sendSignal(req Request[interface{}])
 	run(ctx context.Context, wg *sync.WaitGroup)
 	ProcessReq(ctx context.Context)
 	CancelReq(ctx context.Context)
@@ -50,33 +50,29 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 				fmt.Printf("Component %d stopped due to cancellation\n", c.CompId)
 				return
 			case msg := <-c.InChannel:
-				//fmt.Printf("Component %d received message: %s\n", c.CompId, msg)
 				if request, ok := msg.(Request[interface{}]); ok {
 					fmt.Printf("Component %d received request: %v\n", c.CompId, request)
 					// Check if the component exists in the map
-					if component, exists := compNameStructMap[request.ComponentName]; exists {
+					if component, exists := idStructMap[c.CompId]; exists {
 						component.ProcessReq(ctx)
-						component.sendSignal()
+						component.sendSignal(request)
 					} else {
 						fmt.Printf("Component %s not found in map\n", request.ComponentName)
 					}
-					//c.handleRequest(ctx, request)
 				} else {
 					fmt.Printf("Component %d received unknown message: %v\n", c.CompId, msg)
 				}
-				//compNameStructMap[msg.ComponentName].ProcessReq(ctx)
-				// compNameStructMap[msg].sendSignal()
 
 			}
 		}
 	}()
 }
 
-func (c *BasicComponent) sendSignal() {
+func (c *BasicComponent) sendSignal(req Request[interface{}]) {
 	//fmt.Println(c.OutChannel)
 	//c.OutChannel[1] <- "Comp2"
 	for _, outChan := range c.OutChannel {
-		outChan <- "I am done"
+		outChan <- req
 	}
 }
 

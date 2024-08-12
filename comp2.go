@@ -15,7 +15,7 @@ func (c *Comp2) ProcessReq(ctx context.Context) {
 	// c.OutChannel[0] <- "Start Processing"
 	// c.OutChannel[1] <- "Start Processing"
 	fmt.Println("Printing my customComp ID ", c.CompId)
-	fmt.Println("Comp2 processing from userdefined")
+	fmt.Printf("\nComp%d processing from userdefined\n", c.CompId)
 }
 
 func (c *Comp2) SyncReq(ctx context.Context) {

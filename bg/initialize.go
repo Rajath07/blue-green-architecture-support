@@ -15,15 +15,15 @@ type CompositeKey struct {
 }
 
 var waitingCount = make(map[CompositeKey]int)
-var compNameStructMap = map[string]Component{}
+var idStructMap = map[int]Component{}
 
 // InitializeComponents initializes and starts the components based on dependencies.
 func InitializeComponents(ctx context.Context, filePath string, userComps []Component) *Supervisor {
 	var wg sync.WaitGroup
 	var structNames []string
-	var idStructMap = map[int]Component{}
+	//var idStructMap = map[int]Component{}
 	var idInChanMap = make(map[int]chan interface{})
-	//var compNameStructMap = map[string]Component{}
+	var compNameStructMap = map[string]Component{}
 	var superInChan = make(chan interface{})
 
 	// Parse the YAML file

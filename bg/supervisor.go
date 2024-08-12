@@ -30,9 +30,11 @@ const (
 
 // Request encapsulates the details of a request being sent.
 type Request[T any] struct {
+	SourceCompId  int
 	ComponentName string
 	Operation     OperationType
 	Data          T
+	Index         int
 }
 
 // NewSupervisor creates a new supervisor with a channel.
@@ -61,16 +63,18 @@ func (s *Supervisor) run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 // SendReq sends a request to a component, specifying the operation and data.
-func (s *Supervisor) SendReq(componentName string, operation OperationType, data interface{}) {
+func (s *Supervisor) SendReq(componentName string, operation OperationType, data interface{}, index int) {
 	componentId := getComponentId(componentName)
 	req := Request[interface{}]{
+		SourceCompId:  componentId,
 		ComponentName: componentName,
 		Operation:     operation,
 		Data:          data,
+		Index:         index,
 	}
 	if outChan, ok := s.OutChannelMap[componentId]; ok {
 		outChan <- req
-		fmt.Printf("Sent request to component %s with operation %d and data %v\n", componentName, operation, data)
+		fmt.Printf("Sent request to component %s with operation %d and data %v, index %d\n", componentName, operation, data, index)
 	} else {
 		fmt.Printf("Component %s not found\n", componentName)
 	}

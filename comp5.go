@@ -13,7 +13,7 @@ type Comp5 struct {
 
 func (c *Comp5) ProcessReq(ctx context.Context) {
 	fmt.Println("Printing my customComp ID ", c.CompId)
-	fmt.Println("Comp3 processing from userdefined")
+	fmt.Printf("\nComp%d processing from userdefined\n", c.CompId)
 }
 
 func (c *Comp5) SyncReq(ctx context.Context) {
