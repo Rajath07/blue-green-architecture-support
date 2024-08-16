@@ -14,6 +14,8 @@ type Comp5 struct {
 func (c *Comp5) ProcessReq(ctx context.Context) {
 	fmt.Println("Printing my customComp ID ", c.CompId)
 	fmt.Printf("\nComp%d processing from userdefined\n", c.CompId)
+	// fmt.Println("Sleeping for 5 seconds")
+	// time.Sleep(5 * time.Second)
 }
 
 func (c *Comp5) SyncReq(ctx context.Context) {

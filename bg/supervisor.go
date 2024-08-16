@@ -11,6 +11,7 @@ type SupervisorInterface interface {
 	run(ctx context.Context, wg *sync.WaitGroup)
 	SendReq(componentName string, operation OperationType, data interface{})
 	processQueue()
+	updateTaskList()
 }
 
 // Supervisor represents the supervisor component that controls other components.
@@ -19,7 +20,8 @@ type Supervisor struct {
 	InChannel     chan interface{}
 	OutChannelMap map[int]chan interface{}
 	RequestQueue  []Request[interface{}]
-	QueueMutex    sync.Mutex // To protect access to the queue
+	QueueMutex    sync.Mutex    // To protect access to the queue
+	TaskList      map[int][]int //Maintains current ongoing tasks
 }
 
 // OperationType represents the type of operation for CRUD actions.
@@ -47,7 +49,7 @@ func initSupervisor(inChan chan interface{}, idStructMap map[int]Component) *Sup
 	for id, comp := range idStructMap {
 		outChanMap[id] = comp.getInChan()
 	}
-	return &Supervisor{CompId: 0, InChannel: inChan, OutChannelMap: outChanMap}
+	return &Supervisor{CompId: 0, InChannel: inChan, OutChannelMap: outChanMap, RequestQueue: []Request[interface{}]{}, TaskList: make(map[int][]int)}
 }
 
 func (s *Supervisor) run(ctx context.Context, wg *sync.WaitGroup) {
@@ -66,6 +68,7 @@ func (s *Supervisor) run(ctx context.Context, wg *sync.WaitGroup) {
 				case Signal:
 					fmt.Printf("Supervisor received signal: %v\n", m)
 					component := idStructMap[m.SourceCompId]
+					s.updateTaskList(m)
 					component.setState(m.State)
 				}
 				//fmt.Printf("Supervisor received message: %s\n", msg)
@@ -113,10 +116,11 @@ func (s *Supervisor) processQueue() {
 		// Dequeue the first request
 		req := s.RequestQueue[0]
 		component := idStructMap[req.SourceCompId]
-		// Check if the component is idle
-		if component.getState() == Idle {
+		// Check if the component is idle and there is no entry for that component in task list
+		if component.getState() == Idle && s.TaskList[req.SourceCompId] == nil {
 			// Dequeue the request if the component is idle
 			s.RequestQueue = s.RequestQueue[1:]
+			s.TaskList[req.SourceCompId] = []int{}
 			//set the component to running
 			component.setState(Running)
 			// Send the request to the appropriate component
@@ -129,4 +133,21 @@ func (s *Supervisor) processQueue() {
 		}
 
 	}
+}
+
+func (s *Supervisor) updateTaskList(m Signal) {
+
+	// if _, ok := s.TaskList[m.SourceCompId]; !ok {
+	// 	s.TaskList[m.CompId] = []int{}
+	// }
+	if m.State == Idle {
+		s.TaskList[m.SourceCompId] = append(s.TaskList[m.SourceCompId], m.CompId)
+
+	}
+	fmt.Println("TaskList", s.TaskList)
+	if len(s.TaskList[m.SourceCompId]) == waitCountSupervisor[int64(m.SourceCompId)] {
+		fmt.Println("Deleting TaskList entry for Source Component", m.SourceCompId)
+		delete(s.TaskList, m.SourceCompId)
+	}
+
 }

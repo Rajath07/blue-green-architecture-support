@@ -160,7 +160,7 @@ func (c *BasicComponent) setState(state ComponentState) {
 	c.StateMutex.Lock()
 	defer c.StateMutex.Unlock()
 	c.State = state
-	fmt.Println("Component", c.CompId, "state changed to ", state)
+	//fmt.Println("Component", c.CompId, "state changed to ", state)
 }
 
 // GetState gets the current state of the component safely

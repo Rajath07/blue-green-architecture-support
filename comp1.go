@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/Rajath07/blue-green-architecture-support/bg"
 )
@@ -16,6 +17,8 @@ func (c *Comp1) ProcessReq(ctx context.Context) {
 	//fmt.Println("Outchannels: ", c.OutChannel)
 	fmt.Println("Printing my customComp ID ", c.CompId)
 	fmt.Printf("\nComp%d processing from userdefined\n", c.CompId)
+	fmt.Println("Sleeping for 5 seconds")
+	time.Sleep(5 * time.Second)
 }
 
 func (c *Comp1) SyncReq(ctx context.Context) {
