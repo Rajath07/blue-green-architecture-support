@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"time"
 )
 
 type SupervisorInterface interface {
 	run(ctx context.Context, wg *sync.WaitGroup)
 	SendReq(componentName string, operation OperationType, data interface{})
+	processQueue()
 }
 
 // Supervisor represents the supervisor component that controls other components.
@@ -58,14 +60,25 @@ func (s *Supervisor) run(ctx context.Context, wg *sync.WaitGroup) {
 				fmt.Printf("Component %d stopped due to cancellation\n", s.CompId)
 				return
 			case msg := <-s.InChannel:
-				fmt.Printf("Supervisor received message: %s\n", msg)
+				switch m := msg.(type) {
+				case Request[interface{}]:
+					fmt.Printf("Supervisor received request: %v\n", m)
+				case Signal:
+					fmt.Printf("Supervisor received signal: %v\n", m)
+					component := idStructMap[m.SourceCompId]
+					component.setState(m.State)
+				}
+				//fmt.Printf("Supervisor received message: %s\n", msg)
+			default:
+				s.processQueue()
+				time.Sleep(100 * time.Millisecond)
 			}
 		}
 	}()
 }
 
 // SendReq sends a request to a component, specifying the operation and data.
-func (s *Supervisor) SendReq(componentName string, operation OperationType, data interface{}, index int) {
+func (s *Supervisor) SendReq(componentName string, operation OperationType, data interface{}, index int) bool {
 	componentId := getComponentId(componentName)
 	req := Request[interface{}]{
 		SourceCompId:  componentId,
@@ -81,12 +94,39 @@ func (s *Supervisor) SendReq(componentName string, operation OperationType, data
 	// Enqueue the request
 	s.RequestQueue = append(s.RequestQueue, req)
 	fmt.Printf("Enqueued request for component %s \n", componentName)
+	return true
 
-	if outChan, ok := s.OutChannelMap[componentId]; ok {
-		outChan <- req
-		fmt.Printf("Sent request to component %s with operation %d and data %v, index %d\n", componentName, operation, data, index)
-	} else {
-		fmt.Printf("Component %s not found\n", componentName)
+	// if outChan, ok := s.OutChannelMap[componentId]; ok {
+	// 	outChan <- req
+	// 	fmt.Printf("Sent request to component %s with operation %d and data %v, index %d\n", componentName, operation, data, index)
+	// } else {
+	// 	fmt.Printf("Component %s not found\n", componentName)
+	// }
+}
+
+func (s *Supervisor) processQueue() {
+	// Lock the queue to safely dequeue requests
+	s.QueueMutex.Lock()
+	defer s.QueueMutex.Unlock()
+
+	if len(s.RequestQueue) > 0 {
+		// Dequeue the first request
+		req := s.RequestQueue[0]
+		component := idStructMap[req.SourceCompId]
+		// Check if the component is idle
+		if component.getState() == Idle {
+			// Dequeue the request if the component is idle
+			s.RequestQueue = s.RequestQueue[1:]
+			//set the component to running
+			component.setState(Running)
+			// Send the request to the appropriate component
+			if outChan, ok := s.OutChannelMap[req.SourceCompId]; ok {
+				outChan <- req
+				fmt.Printf("Dispatched request to component %s\n", req.ComponentName)
+			} else {
+				fmt.Printf("Component %s not found\n", req.ComponentName)
+			}
+		}
+
 	}
-
 }

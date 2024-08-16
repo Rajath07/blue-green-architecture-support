@@ -16,6 +16,7 @@ type CompositeKey struct {
 
 var waitingCount = make(map[CompositeKey]int)
 var idStructMap = map[int]Component{}
+var waitCountSupervisor = make(map[int64]int)
 
 // InitializeComponents initializes and starts the components based on dependencies.
 func InitializeComponents(ctx context.Context, filePath string, userComps []Component) *Supervisor {
@@ -33,11 +34,9 @@ func InitializeComponents(ctx context.Context, filePath string, userComps []Comp
 	}
 	fmt.Println("Reduced graph ", dependencies)
 	CountPaths(redGraph)
-	//fmt.Println("Waiting count ", waitingCount)
-	// Print the results
-	// for key, count := range waitingCount {
-	// 	fmt.Printf("Paths from node %d to node %d: %d\n", key.compId, key.myId, count)
-	// }
+	waitCountSupervisor = calculateReachableNodes(redGraph)
+	fmt.Println("Waiting count ", waitingCount)
+	fmt.Println("Waiting count for supervisor ", waitCountSupervisor)
 
 	// Assign IDs for components and store the names of the user defined structs
 	for _, comp := range userComps {
@@ -135,4 +134,43 @@ func DFSWithMemoization(g *simple.DirectedGraph, nodeID int64, memo map[int64]ma
 		// Count the direct path from the predecessor to the current node
 		memo[nodeID][predID]++
 	}
+}
+
+// calculateReachableNodes calculates the number of reachable nodes for each node using memoization.
+func calculateReachableNodes(graph *simple.DirectedGraph) map[int64]int {
+	reachableCount := make(map[int64]int)
+	memo := make(map[int64]bool)
+
+	// Iterate through all nodes in the graph.
+	nodes := graph.Nodes()
+	for nodes.Next() {
+		node := nodes.Node()
+		visited := make(map[int64]bool)
+		// Compute the number of reachable nodes starting from this node.
+		reachableCount[node.ID()] = dfsMemoized(graph, node.ID(), visited, memo)
+	}
+
+	return reachableCount
+}
+
+// dfsMemoized performs a DFS with memoization to count reachable nodes.
+func dfsMemoized(graph *simple.DirectedGraph, nodeID int64, visited map[int64]bool, memo map[int64]bool) int {
+	// If this node has already been visited, return 0 to avoid double-counting
+	if visited[nodeID] {
+		return 0
+	}
+	// Mark this node as visited
+	visited[nodeID] = true
+
+	// Initialize count with 1 to include this node itself.
+	count := 1
+
+	// Iterate over all successors (outgoing edges) of the current node.
+	successors := graph.From(nodeID)
+	for successors.Next() {
+		neighbor := successors.Node()
+		count += dfsMemoized(graph, neighbor.ID(), visited, memo)
+	}
+
+	return count
 }

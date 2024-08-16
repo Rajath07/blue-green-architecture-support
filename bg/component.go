@@ -11,24 +11,45 @@ type Component interface {
 	init(compId int, inChannel chan interface{})
 	initOutChan(outChannel []chan interface{})
 	getInChan() chan interface{}
-	sendSignal(req Request[interface{}])
+	sendSignal(req Request[interface{}], state ComponentState)
 	run(ctx context.Context, wg *sync.WaitGroup)
+	getState() ComponentState
+	setState(state ComponentState)
 	ProcessReq(ctx context.Context)
 	CancelReq(ctx context.Context)
 	SyncReq(ctx context.Context)
 }
+
+// Signal represents a signal sent between component and Supervisor
+type Signal struct {
+	SourceCompId int
+	CompId       int
+	State        ComponentState
+}
+
+// ComponentState defines the possible states of a component
+type ComponentState int
+
+const (
+	Idle ComponentState = iota
+	Running
+	Cancelled
+)
 
 // BasicComponent represents a single component with channels and implements the Component interface.
 type BasicComponent struct {
 	CompId     int
 	InChannel  chan interface{}
 	OutChannel []chan interface{}
+	State      ComponentState // Field to track component state
+	StateMutex sync.Mutex     // Mutex to protect state changes
 	//SuperChannel chan string
 }
 
 func (c *BasicComponent) init(compId int, inChannel chan interface{}) {
 	c.CompId = compId
 	c.InChannel = make(chan interface{})
+	c.State = Idle
 }
 
 func (c *BasicComponent) initOutChan(outChannel []chan interface{}) {
@@ -56,7 +77,7 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 					if request.SourceCompId == c.CompId {
 						if component, exists := idStructMap[c.CompId]; exists {
 							component.ProcessReq(ctx)
-							component.sendSignal(request)
+							component.sendSignal(request, ComponentState(Idle))
 							currCount = 0
 						} else {
 							fmt.Printf("Component %s not found in map\n", request.ComponentName)
@@ -68,7 +89,7 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 							// Check if the component exists in the map
 							if component, exists := idStructMap[c.CompId]; exists {
 								component.ProcessReq(ctx)
-								component.sendSignal(request)
+								component.sendSignal(request, ComponentState(Idle))
 								currCount = 0
 							} else {
 								fmt.Printf("Component %s not found in map\n", request.ComponentName)
@@ -87,9 +108,10 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 	}()
 }
 
-func (c *BasicComponent) sendSignal(req Request[interface{}]) {
-	for _, outChan := range c.OutChannel {
-		outChan <- req
+func (c *BasicComponent) sendSignal(req Request[interface{}], state ComponentState) {
+	c.OutChannel[0] <- Signal{SourceCompId: req.SourceCompId, CompId: c.CompId, State: state}
+	for i := 1; i < len(c.OutChannel); i++ { // Start from index 1
+		c.OutChannel[i] <- req
 	}
 }
 
@@ -131,4 +153,19 @@ func (c *BasicComponent) SyncReq(ctx context.Context) {
 		fmt.Printf("Component %d updating request\n", c.CompId)
 		// Example: Actual update logic
 	}
+}
+
+// SetState sets the state of the component safely
+func (c *BasicComponent) setState(state ComponentState) {
+	c.StateMutex.Lock()
+	defer c.StateMutex.Unlock()
+	c.State = state
+	fmt.Println("Component", c.CompId, "state changed to ", state)
+}
+
+// GetState gets the current state of the component safely
+func (c *BasicComponent) getState() ComponentState {
+	c.StateMutex.Lock()
+	defer c.StateMutex.Unlock()
+	return c.State
 }
