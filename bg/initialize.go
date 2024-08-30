@@ -19,7 +19,7 @@ var idStructMap = map[int]Component{}
 var waitCountSupervisor = make(map[int64]int)
 
 // InitializeComponents initializes and starts the components based on dependencies.
-func InitializeComponents(ctx context.Context, filePath string, userComps []Component) *Supervisor {
+func InitializeComponents(ctx context.Context, filePath string, userComps []Component, switchCount int) *Supervisor {
 	var wg sync.WaitGroup
 	var structNames []string
 	//var idStructMap = map[int]Component{}
@@ -66,7 +66,7 @@ func InitializeComponents(ctx context.Context, filePath string, userComps []Comp
 	fmt.Println(IdToComponent)
 
 	//Initialize the supervisor
-	supervisor := initSupervisor(superInChan, idStructMap)
+	supervisor := initSupervisor(superInChan, idStructMap, switchCount)
 	supervisor.run(ctx, &wg)
 
 	// Start all components with the context

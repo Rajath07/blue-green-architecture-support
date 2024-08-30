@@ -18,8 +18,8 @@ func (c *Comp5) ProcessReq(ctx context.Context) {
 	// time.Sleep(5 * time.Second)
 }
 
-func (c *Comp5) SyncReq(ctx context.Context) {
-	fmt.Printf("Comp3 syncing from userdefined")
+func (c *Comp5) Switch(ctx context.Context) {
+	fmt.Println("Switching blue to green in ", c.CompId)
 }
 
 func (c *Comp5) CancelReq(ctx context.Context) {

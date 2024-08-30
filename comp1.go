@@ -18,11 +18,11 @@ func (c *Comp1) ProcessReq(ctx context.Context) {
 	fmt.Println("Printing my customComp ID ", c.CompId)
 	fmt.Printf("\nComp%d processing from userdefined\n", c.CompId)
 	fmt.Println("Sleeping for 5 seconds")
-	time.Sleep(5 * time.Second)
+	time.Sleep(3 * time.Second)
 }
 
-func (c *Comp1) SyncReq(ctx context.Context) {
-	fmt.Printf("Comp1 syncing from userdefined")
+func (c *Comp1) Switch(ctx context.Context) {
+	fmt.Println("Switching blue to green in ", c.CompId)
 }
 
 func (c *Comp1) CancelReq(ctx context.Context) {

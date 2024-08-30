@@ -22,6 +22,8 @@ type Supervisor struct {
 	RequestQueue  []Request[interface{}]
 	QueueMutex    sync.Mutex    // To protect access to the queue
 	TaskList      map[int][]int //Maintains current ongoing tasks
+	DoneList      []map[int][]int
+	switchCount   int
 }
 
 // OperationType represents the type of operation for CRUD actions.
@@ -43,13 +45,15 @@ type Request[T any] struct {
 	Index         int
 }
 
+var switchCount = 0
+
 // NewSupervisor creates a new supervisor with a channel.
-func initSupervisor(inChan chan interface{}, idStructMap map[int]Component) *Supervisor {
+func initSupervisor(inChan chan interface{}, idStructMap map[int]Component, switchCount int) *Supervisor {
 	var outChanMap = make(map[int]chan interface{})
 	for id, comp := range idStructMap {
 		outChanMap[id] = comp.getInChan()
 	}
-	return &Supervisor{CompId: 0, InChannel: inChan, OutChannelMap: outChanMap, RequestQueue: []Request[interface{}]{}, TaskList: make(map[int][]int)}
+	return &Supervisor{CompId: 0, InChannel: inChan, OutChannelMap: outChanMap, RequestQueue: []Request[interface{}]{}, TaskList: make(map[int][]int), DoneList: []map[int][]int{}, switchCount: switchCount}
 }
 
 func (s *Supervisor) run(ctx context.Context, wg *sync.WaitGroup) {
@@ -98,13 +102,6 @@ func (s *Supervisor) SendReq(componentName string, operation OperationType, data
 	s.RequestQueue = append(s.RequestQueue, req)
 	fmt.Printf("Enqueued request for component %s \n", componentName)
 	return true
-
-	// if outChan, ok := s.OutChannelMap[componentId]; ok {
-	// 	outChan <- req
-	// 	fmt.Printf("Sent request to component %s with operation %d and data %v, index %d\n", componentName, operation, data, index)
-	// } else {
-	// 	fmt.Printf("Component %s not found\n", componentName)
-	// }
 }
 
 func (s *Supervisor) processQueue() {
@@ -112,17 +109,53 @@ func (s *Supervisor) processQueue() {
 	s.QueueMutex.Lock()
 	defer s.QueueMutex.Unlock()
 
-	if len(s.RequestQueue) > 0 {
+	if switchCount == s.switchCount {
+		// var component Component
+		// var compId int
+		//If doneList is empty then we reset the switchCount to 0
+		if len(s.DoneList) == 0 {
+			s.switchCount = 0
+		} else {
+			compToSwitch := s.DoneList[0]
+			s.DoneList = s.DoneList[1:]
+			fmt.Println("compToSwitch ", compToSwitch)
+			//Extract key of this map
+			for _, v := range compToSwitch {
+				// compId := k
+				// component := idStructMap[k]
+				// fmt.Println("CompID to be switched ", k)
+				for _, compId := range v {
+					if outChan, ok := s.OutChannelMap[compId]; ok {
+						outChan <- "Switch"
+						fmt.Printf("Dispatched switch signal to component %d\n", compId)
+					}
+				}
+			}
+			// if component.getState() == Idle && s.TaskList[compId] == nil {
+			// 	s.DoneList = s.DoneList[1:]
+			// 	s.TaskList[compId] = []int{}
+			// 	component.setState(Running)
+			// 	//Now send the switch signal to the component
+			// 	if outChan, ok := s.OutChannelMap[compId]; ok {
+			// 		outChan <- Signal{SourceCompId: s.CompId, CompId: compId, State: Idle}
+			// 		fmt.Printf("Dispatched switch signal to component %d\n", compId)
+			// 	} else {
+			// 		fmt.Printf("Component %d not found\n", compId)
+			// 	}
+			// }
+
+		}
+
+	} else if len(s.RequestQueue) > 0 {
 		// Dequeue the first request
 		req := s.RequestQueue[0]
 		component := idStructMap[req.SourceCompId]
 		// Check if the component is idle and there is no entry for that component in task list
 		if component.getState() == Idle && s.TaskList[req.SourceCompId] == nil {
-			// Dequeue the request if the component is idle
-			s.RequestQueue = s.RequestQueue[1:]
+			s.RequestQueue = s.RequestQueue[1:] // Dequeue the request if the component is idle
 			s.TaskList[req.SourceCompId] = []int{}
-			//set the component to running
 			component.setState(Running)
+
 			// Send the request to the appropriate component
 			if outChan, ok := s.OutChannelMap[req.SourceCompId]; ok {
 				outChan <- req
@@ -146,8 +179,11 @@ func (s *Supervisor) updateTaskList(m Signal) {
 	}
 	fmt.Println("TaskList", s.TaskList)
 	if len(s.TaskList[m.SourceCompId]) == waitCountSupervisor[int64(m.SourceCompId)] {
-		fmt.Println("Deleting TaskList entry for Source Component", m.SourceCompId)
+		fmt.Println("Moving TaskList entry of Source Component ID", m.SourceCompId, "to DoneList")
+		s.DoneList = append(s.DoneList, map[int][]int{m.SourceCompId: s.TaskList[m.SourceCompId]}) //Move the TaskList entry to the done list
 		delete(s.TaskList, m.SourceCompId)
+		switchCount++
 	}
+	fmt.Println("DoneList", s.DoneList)
 
 }

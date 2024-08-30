@@ -11,13 +11,13 @@ type Component interface {
 	init(compId int, inChannel chan interface{})
 	initOutChan(outChannel []chan interface{})
 	getInChan() chan interface{}
-	sendSignal(req Request[interface{}], state ComponentState)
+	sendSignal(req interface{}, state ComponentState)
 	run(ctx context.Context, wg *sync.WaitGroup)
 	getState() ComponentState
 	setState(state ComponentState)
 	ProcessReq(ctx context.Context)
 	CancelReq(ctx context.Context)
-	SyncReq(ctx context.Context)
+	Switch(ctx context.Context)
 }
 
 // Signal represents a signal sent between component and Supervisor
@@ -64,7 +64,7 @@ func (c *BasicComponent) getInChan() chan interface{} {
 func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
-		var currCount int
+		var currCount int //To compare with the waiting count of the component
 		defer wg.Done()
 		for {
 			select {
@@ -100,7 +100,11 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 					}
 
 				} else {
-					fmt.Printf("Component %d received unknown message: %v\n", c.CompId, msg)
+					if component, exists := idStructMap[c.CompId]; exists {
+						component.Switch(ctx)
+					} else {
+						fmt.Printf("Component %s not found in map\n", request.ComponentName)
+					}
 				}
 
 			}
@@ -108,11 +112,22 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 	}()
 }
 
-func (c *BasicComponent) sendSignal(req Request[interface{}], state ComponentState) {
-	c.OutChannel[0] <- Signal{SourceCompId: req.SourceCompId, CompId: c.CompId, State: state}
-	for i := 1; i < len(c.OutChannel); i++ { // Start from index 1
-		c.OutChannel[i] <- req
+func (c *BasicComponent) sendSignal(req interface{}, state ComponentState) {
+	switch v := req.(type) {
+	case Request[interface{}]:
+		c.OutChannel[0] <- Signal{SourceCompId: v.SourceCompId, CompId: c.CompId, State: state}
+		for i := 1; i < len(c.OutChannel); i++ { // Start from index 1
+			c.OutChannel[i] <- req
+		}
+	case string:
+		c.OutChannel[0] <- Signal{SourceCompId: -1, CompId: c.CompId, State: state}
+
 	}
+
+	// c.OutChannel[0] <- Signal{SourceCompId: req.SourceCompId, CompId: c.CompId, State: state}
+	// for i := 1; i < len(c.OutChannel); i++ { // Start from index 1
+	// 	c.OutChannel[i] <- req
+	// }
 }
 
 // ProcessReq processes requests, checking for context cancellation.
@@ -143,8 +158,8 @@ func (c *BasicComponent) CancelReq(ctx context.Context) {
 	}
 }
 
-// SyncReq is a placeholder for the user-defined request update method.
-func (c *BasicComponent) SyncReq(ctx context.Context) {
+// Switch is a placeholder for the user-defined request update method.
+func (c *BasicComponent) Switch(ctx context.Context) {
 	select {
 	case <-ctx.Done():
 		fmt.Printf("Component %d stopping request update due to cancellation\n", c.CompId)

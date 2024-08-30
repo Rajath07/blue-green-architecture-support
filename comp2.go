@@ -18,8 +18,8 @@ func (c *Comp2) ProcessReq(ctx context.Context) {
 	fmt.Printf("\nComp%d processing from userdefined\n", c.CompId)
 }
 
-func (c *Comp2) SyncReq(ctx context.Context) {
-	fmt.Printf("Comp1 syncing from userdefined")
+func (c *Comp2) Switch(ctx context.Context) {
+	fmt.Println("Switching blue to green in ", c.CompId)
 }
 
 func (c *Comp2) CancelReq(ctx context.Context) {

@@ -25,9 +25,10 @@ func main() {
 	compCollec = append(compCollec, customComp5)
 
 	// Initialize and run components
-	components := bg.InitializeComponents(ctx, "dependency.yaml", compCollec)
+	components := bg.InitializeComponents(ctx, "dependency.yaml", compCollec, 2)
 	components.SendReq("Comp1", bg.Update, 10, 0)
 	components.SendReq("Comp1", bg.Create, 33, 2)
+	components.SendReq("Comp1", bg.Create, 60, 1)
 	//components.SendReq("Comp4", bg.Create, 34, 0)
 	time.Sleep(20 * time.Second)
 
