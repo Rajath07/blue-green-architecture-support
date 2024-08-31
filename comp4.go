@@ -21,5 +21,5 @@ func (c *Comp4) Switch(ctx context.Context) {
 }
 
 func (c *Comp4) CancelReq(ctx context.Context) {
-	fmt.Printf("Comp3 cancelling from userdefined")
+	fmt.Printf("Component %d cancelling from userdefined", c.CompId)
 }

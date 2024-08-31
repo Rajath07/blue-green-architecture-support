@@ -11,7 +11,7 @@ type Component interface {
 	init(compId int, inChannel chan interface{})
 	initOutChan(outChannel []chan interface{})
 	getInChan() chan interface{}
-	sendSignal(req interface{}, state ComponentState)
+	sendSignal(req interface{}, state ComponentState, ctx context.Context)
 	run(ctx context.Context, wg *sync.WaitGroup)
 	getState() ComponentState
 	setState(state ComponentState)
@@ -72,24 +72,26 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 				fmt.Printf("Component %d stopped due to cancellation\n", c.CompId)
 				return
 			case msg := <-c.InChannel:
-				if request, ok := msg.(Request[interface{}]); ok {
+				switch request := msg.(type) {
+				case Request[interface{}]:
 					fmt.Printf("Component %d received request: %v\n", c.CompId, request)
 					if request.SourceCompId == c.CompId {
 						if component, exists := idStructMap[c.CompId]; exists {
+							c.OutChannel[0] <- Signal{SourceCompId: request.SourceCompId, CompId: c.CompId, State: ComponentState(Running)}
 							component.ProcessReq(ctx)
-							component.sendSignal(request, ComponentState(Idle))
+							component.sendSignal(request, ComponentState(Idle), ctx)
 							currCount = 0
 						} else {
 							fmt.Printf("Component %s not found in map\n", request.ComponentName)
 						}
-
 					} else {
 						currCount++
 						if currCount == waitingCount[CompositeKey{myId: c.CompId, compId: request.SourceCompId}] {
-							// Check if the component exists in the map
 							if component, exists := idStructMap[c.CompId]; exists {
+								//component.setState(Running)
+								c.OutChannel[0] <- Signal{SourceCompId: request.SourceCompId, CompId: c.CompId, State: ComponentState(Running)}
 								component.ProcessReq(ctx)
-								component.sendSignal(request, ComponentState(Idle))
+								component.sendSignal(request, ComponentState(Idle), ctx)
 								currCount = 0
 							} else {
 								fmt.Printf("Component %s not found in map\n", request.ComponentName)
@@ -99,35 +101,52 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 						}
 					}
 
-				} else {
-					if component, exists := idStructMap[c.CompId]; exists {
-						component.Switch(ctx)
+				case string:
+					if request == "Switch" {
+						if component, exists := idStructMap[c.CompId]; exists {
+							component.Switch(ctx)
+						} else {
+							fmt.Printf("Component not found in map\n")
+						}
 					} else {
-						fmt.Printf("Component %s not found in map\n", request.ComponentName)
+						fmt.Printf("Component %d received an unexpected string: %s\n", c.CompId, request)
 					}
-				}
 
+				default:
+					fmt.Printf("Component %d received an unknown type of message\n", c.CompId)
+				}
+			default:
+				if idStructMap[c.CompId].getState() == Cancelled {
+					idStructMap[c.CompId].CancelReq(ctx)
+					idStructMap[c.CompId].setState(Idle)
+				}
 			}
 		}
 	}()
 }
 
-func (c *BasicComponent) sendSignal(req interface{}, state ComponentState) {
-	switch v := req.(type) {
-	case Request[interface{}]:
-		c.OutChannel[0] <- Signal{SourceCompId: v.SourceCompId, CompId: c.CompId, State: state}
-		for i := 1; i < len(c.OutChannel); i++ { // Start from index 1
-			c.OutChannel[i] <- req
-		}
-	case string:
-		c.OutChannel[0] <- Signal{SourceCompId: -1, CompId: c.CompId, State: state}
+func (c *BasicComponent) sendSignal(req interface{}, state ComponentState, ctx context.Context) {
+	if c.getState() != Cancelled {
+		switch v := req.(type) {
+		case Request[interface{}]:
+			c.OutChannel[0] <- Signal{SourceCompId: v.SourceCompId, CompId: c.CompId, State: state}
+			for i := 1; i < len(c.OutChannel); i++ { // Start from index 1
+				c.OutChannel[i] <- req
+			}
+			// case string:
+			// 	c.OutChannel[0] <- Signal{SourceCompId: -1, CompId: c.CompId, State: state}
 
+		}
+
+		// c.OutChannel[0] <- Signal{SourceCompId: req.SourceCompId, CompId: c.CompId, State: state}
+		// for i := 1; i < len(c.OutChannel); i++ { // Start from index 1
+		// 	c.OutChannel[i] <- req
+		// }
+	} else if c.getState() == Cancelled { //We have to call CancelReq here as well
+		idStructMap[c.CompId].CancelReq(ctx)
+		idStructMap[c.CompId].setState(Idle)
 	}
 
-	// c.OutChannel[0] <- Signal{SourceCompId: req.SourceCompId, CompId: c.CompId, State: state}
-	// for i := 1; i < len(c.OutChannel); i++ { // Start from index 1
-	// 	c.OutChannel[i] <- req
-	// }
 }
 
 // ProcessReq processes requests, checking for context cancellation.

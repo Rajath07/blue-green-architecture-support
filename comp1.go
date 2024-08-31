@@ -17,8 +17,8 @@ func (c *Comp1) ProcessReq(ctx context.Context) {
 	//fmt.Println("Outchannels: ", c.OutChannel)
 	fmt.Println("Printing my customComp ID ", c.CompId)
 	fmt.Printf("\nComp%d processing from userdefined\n", c.CompId)
-	fmt.Println("Sleeping for 5 seconds")
-	time.Sleep(3 * time.Second)
+	fmt.Println("Sleeping for 2 seconds")
+	time.Sleep(2 * time.Second)
 }
 
 func (c *Comp1) Switch(ctx context.Context) {
@@ -26,5 +26,5 @@ func (c *Comp1) Switch(ctx context.Context) {
 }
 
 func (c *Comp1) CancelReq(ctx context.Context) {
-	fmt.Printf("Comp1 cancelling from userdefined")
+	fmt.Printf("Component %d cancelling from userdefined", c.CompId)
 }

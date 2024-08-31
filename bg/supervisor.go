@@ -22,7 +22,7 @@ type Supervisor struct {
 	RequestQueue  []Request[interface{}]
 	QueueMutex    sync.Mutex    // To protect access to the queue
 	TaskList      map[int][]int //Maintains current ongoing tasks
-	DoneList      []map[int][]int
+	DoneList      map[int][]int
 	switchCount   int
 }
 
@@ -53,7 +53,7 @@ func initSupervisor(inChan chan interface{}, idStructMap map[int]Component, swit
 	for id, comp := range idStructMap {
 		outChanMap[id] = comp.getInChan()
 	}
-	return &Supervisor{CompId: 0, InChannel: inChan, OutChannelMap: outChanMap, RequestQueue: []Request[interface{}]{}, TaskList: make(map[int][]int), DoneList: []map[int][]int{}, switchCount: switchCount}
+	return &Supervisor{CompId: 0, InChannel: inChan, OutChannelMap: outChanMap, RequestQueue: []Request[interface{}]{}, TaskList: make(map[int][]int), DoneList: make(map[int][]int), switchCount: switchCount}
 }
 
 func (s *Supervisor) run(ctx context.Context, wg *sync.WaitGroup) {
@@ -72,8 +72,9 @@ func (s *Supervisor) run(ctx context.Context, wg *sync.WaitGroup) {
 				case Signal:
 					fmt.Printf("Supervisor received signal: %v\n", m)
 					component := idStructMap[m.SourceCompId]
-					s.updateTaskList(m)
 					component.setState(m.State)
+					s.updateTaskList(m)
+
 				}
 				//fmt.Printf("Supervisor received message: %s\n", msg)
 			default:
@@ -116,11 +117,11 @@ func (s *Supervisor) processQueue() {
 		if len(s.DoneList) == 0 {
 			s.switchCount = 0
 		} else {
-			compToSwitch := s.DoneList[0]
-			s.DoneList = s.DoneList[1:]
-			fmt.Println("compToSwitch ", compToSwitch)
+			// compToSwitch := s.DoneList[0]
+			// s.DoneList = s.DoneList[1:]
+			// fmt.Println("compToSwitch ", compToSwitch)
 			//Extract key of this map
-			for _, v := range compToSwitch {
+			for key, v := range s.DoneList {
 				// compId := k
 				// component := idStructMap[k]
 				// fmt.Println("CompID to be switched ", k)
@@ -130,6 +131,7 @@ func (s *Supervisor) processQueue() {
 						fmt.Printf("Dispatched switch signal to component %d\n", compId)
 					}
 				}
+				delete(s.DoneList, key)
 			}
 			// if component.getState() == Idle && s.TaskList[compId] == nil {
 			// 	s.DoneList = s.DoneList[1:]
@@ -154,7 +156,8 @@ func (s *Supervisor) processQueue() {
 		if component.getState() == Idle && s.TaskList[req.SourceCompId] == nil {
 			s.RequestQueue = s.RequestQueue[1:] // Dequeue the request if the component is idle
 			s.TaskList[req.SourceCompId] = []int{}
-			component.setState(Running)
+			s.DoneList[req.SourceCompId] = []int{}
+			//component.setState(Running)
 
 			// Send the request to the appropriate component
 			if outChan, ok := s.OutChannelMap[req.SourceCompId]; ok {
@@ -163,6 +166,13 @@ func (s *Supervisor) processQueue() {
 			} else {
 				fmt.Printf("Component %s not found\n", req.ComponentName)
 			}
+		} else if s.TaskList[req.SourceCompId] != nil {
+			for _, compIds := range s.TaskList[req.SourceCompId] {
+				idStructMap[compIds].setState(Cancelled)
+			}
+			delete(s.TaskList, req.SourceCompId)
+			delete(s.DoneList, req.SourceCompId)
+
 		}
 
 	}
@@ -173,14 +183,17 @@ func (s *Supervisor) updateTaskList(m Signal) {
 	// if _, ok := s.TaskList[m.SourceCompId]; !ok {
 	// 	s.TaskList[m.CompId] = []int{}
 	// }
-	if m.State == Idle {
+	if m.State == Running {
 		s.TaskList[m.SourceCompId] = append(s.TaskList[m.SourceCompId], m.CompId)
 
 	}
+	if m.State == Idle {
+		s.DoneList[m.SourceCompId] = append(s.DoneList[m.SourceCompId], m.CompId)
+	}
 	fmt.Println("TaskList", s.TaskList)
-	if len(s.TaskList[m.SourceCompId]) == waitCountSupervisor[int64(m.SourceCompId)] {
-		fmt.Println("Moving TaskList entry of Source Component ID", m.SourceCompId, "to DoneList")
-		s.DoneList = append(s.DoneList, map[int][]int{m.SourceCompId: s.TaskList[m.SourceCompId]}) //Move the TaskList entry to the done list
+	if len(s.DoneList[m.SourceCompId]) == waitCountSupervisor[int64(m.SourceCompId)] {
+		fmt.Println("Deleting TaskList entry of Source Component ID", m.SourceCompId)
+		//s.DoneList = append(s.DoneList, map[int][]int{m.SourceCompId: s.TaskList[m.SourceCompId]}) //Move the TaskList entry to the done list
 		delete(s.TaskList, m.SourceCompId)
 		switchCount++
 	}

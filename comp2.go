@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/Rajath07/blue-green-architecture-support/bg"
 )
@@ -16,6 +17,8 @@ func (c *Comp2) ProcessReq(ctx context.Context) {
 	// c.OutChannel[1] <- "Start Processing"
 	fmt.Println("Printing my customComp ID ", c.CompId)
 	fmt.Printf("\nComp%d processing from userdefined\n", c.CompId)
+	fmt.Println("Sleeping for 2 seconds")
+	time.Sleep(5 * time.Second)
 }
 
 func (c *Comp2) Switch(ctx context.Context) {
@@ -23,5 +26,5 @@ func (c *Comp2) Switch(ctx context.Context) {
 }
 
 func (c *Comp2) CancelReq(ctx context.Context) {
-	fmt.Printf("Comp1 cancelling from userdefined")
+	fmt.Printf("Component %d cancelling from userdefined", c.CompId)
 }
