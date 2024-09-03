@@ -44,7 +44,7 @@ func InitializeComponents(ctx context.Context, filePath string, userComps []Comp
 		structNames = append(structNames, structName)
 		inChan := make(chan interface{})
 		idInChanMap[getComponentId(structName)] = inChan
-		comp.init(getComponentId(structName), inChan)
+		comp.init(getComponentId(structName), inChan, false)
 		idStructMap[getComponentId(structName)] = comp
 		compNameStructMap[structName] = comp
 	}

@@ -8,13 +8,15 @@ import (
 
 // Component interface defines the behavior that all components must implement.
 type Component interface {
-	init(compId int, inChannel chan interface{})
+	init(compId int, inChannel chan interface{}, DirtyFlag bool)
 	initOutChan(outChannel []chan interface{})
 	getInChan() chan interface{}
 	sendSignal(req interface{}, state ComponentState, ctx context.Context)
 	run(ctx context.Context, wg *sync.WaitGroup)
 	getState() ComponentState
 	setState(state ComponentState)
+	GetLiveVersion() int
+	GetStagingVersion() int
 	ProcessReq(ctx context.Context)
 	CancelReq(ctx context.Context)
 	Switch(ctx context.Context)
@@ -22,6 +24,7 @@ type Component interface {
 
 // Signal represents a signal sent between component and Supervisor
 type Signal struct {
+	SigType      RequestType
 	SourceCompId int
 	CompId       int
 	State        ComponentState
@@ -43,13 +46,15 @@ type BasicComponent struct {
 	OutChannel []chan interface{}
 	State      ComponentState // Field to track component state
 	StateMutex sync.Mutex     // Mutex to protect state changes
+	DirtyFlag  bool
 	//SuperChannel chan string
 }
 
-func (c *BasicComponent) init(compId int, inChannel chan interface{}) {
+func (c *BasicComponent) init(compId int, inChannel chan interface{}, DirtyFlag bool) {
 	c.CompId = compId
 	c.InChannel = make(chan interface{})
 	c.State = Idle
+	c.DirtyFlag = DirtyFlag
 }
 
 func (c *BasicComponent) initOutChan(outChannel []chan interface{}) {
@@ -75,42 +80,94 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 				switch request := msg.(type) {
 				case Request[interface{}]:
 					fmt.Printf("Component %d received request: %v\n", c.CompId, request)
-					if request.SourceCompId == c.CompId {
-						if component, exists := idStructMap[c.CompId]; exists {
-							c.OutChannel[0] <- Signal{SourceCompId: request.SourceCompId, CompId: c.CompId, State: ComponentState(Running)}
-							component.ProcessReq(ctx)
-							component.sendSignal(request, ComponentState(Idle), ctx)
-							currCount = 0
-						} else {
-							fmt.Printf("Component %s not found in map\n", request.ComponentName)
-						}
-					} else {
-						currCount++
-						if currCount == waitingCount[CompositeKey{myId: c.CompId, compId: request.SourceCompId}] {
+					if request.ReqType == Operation {
+						if request.SourceCompId == c.CompId {
 							if component, exists := idStructMap[c.CompId]; exists {
-								//component.setState(Running)
-								c.OutChannel[0] <- Signal{SourceCompId: request.SourceCompId, CompId: c.CompId, State: ComponentState(Running)}
+								c.OutChannel[0] <- Signal{SigType: request.ReqType, SourceCompId: request.SourceCompId, CompId: c.CompId, State: ComponentState(Running)}
 								component.ProcessReq(ctx)
+								c.DirtyFlag = true
 								component.sendSignal(request, ComponentState(Idle), ctx)
 								currCount = 0
 							} else {
 								fmt.Printf("Component %s not found in map\n", request.ComponentName)
 							}
 						} else {
-							fmt.Println("Waiting")
+							currCount++
+							if currCount == waitingCount[CompositeKey{myId: c.CompId, compId: request.SourceCompId}] {
+								if component, exists := idStructMap[c.CompId]; exists {
+									//component.setState(Running)
+									c.OutChannel[0] <- Signal{SigType: request.ReqType, SourceCompId: request.SourceCompId, CompId: c.CompId, State: ComponentState(Running)}
+									component.ProcessReq(ctx)
+									c.DirtyFlag = true
+									component.sendSignal(request, ComponentState(Idle), ctx)
+									currCount = 0
+								} else {
+									fmt.Printf("Component %s not found in map\n", request.ComponentName)
+								}
+							} else {
+								fmt.Println("Waiting to perform operation")
+							}
 						}
+					} else if request.ReqType == Switch {
+						if request.SourceCompId == c.CompId {
+							if component, exists := idStructMap[c.CompId]; exists {
+								c.OutChannel[0] <- Signal{SigType: request.ReqType, SourceCompId: request.SourceCompId, CompId: c.CompId, State: ComponentState(Running)}
+								if c.DirtyFlag == true {
+									component.Switch(ctx)
+									c.DirtyFlag = false
+									component.sendSignal(request, ComponentState(Idle), ctx)
+									currCount = 0
+									//Now send signal to others
+								} else {
+									fmt.Println("Component is not dirty")
+									component.sendSignal(request, ComponentState(Idle), ctx)
+									currCount = 0
+								}
+							} else {
+								fmt.Printf("Component not found in map\n")
+							}
+						} else {
+							currCount++
+							if currCount == waitingCount[CompositeKey{myId: c.CompId, compId: request.SourceCompId}] {
+								if component, exists := idStructMap[c.CompId]; exists {
+									c.OutChannel[0] <- Signal{SigType: request.ReqType, SourceCompId: request.SourceCompId, CompId: c.CompId, State: ComponentState(Running)}
+									if c.DirtyFlag == true {
+										component.Switch(ctx)
+										c.DirtyFlag = false
+										component.sendSignal(request, ComponentState(Idle), ctx)
+										currCount = 0
+										//Now send signal to others
+									} else {
+										fmt.Println("Component is not dirty")
+										component.sendSignal(request, ComponentState(Idle), ctx)
+										currCount = 0
+									}
+								} else {
+									fmt.Printf("Component not found in map\n")
+								}
+							} else {
+								fmt.Println("Waiting to perform Switch")
+							}
+						}
+					} else if request.ReqType == Cancel {
+
 					}
 
-				case string:
-					if request == "Switch" {
-						if component, exists := idStructMap[c.CompId]; exists {
-							component.Switch(ctx)
-						} else {
-							fmt.Printf("Component not found in map\n")
-						}
-					} else {
-						fmt.Printf("Component %d received an unexpected string: %s\n", c.CompId, request)
-					}
+				// case string:
+				// 	if request == "Switch" {
+				// 		if component, exists := idStructMap[c.CompId]; exists {
+				// 			if c.DirtyFlag == true {
+				// 				component.Switch(ctx)
+				// 				c.DirtyFlag = false
+				// 				//Now send signal to others
+				// 			}
+
+				// 		} else {
+				// 			fmt.Printf("Component not found in map\n")
+				// 		}
+				// 	} else {
+				// 		fmt.Printf("Component %d received an unexpected string: %s\n", c.CompId, request)
+				// }
 
 				default:
 					fmt.Printf("Component %d received an unknown type of message\n", c.CompId)
@@ -129,7 +186,7 @@ func (c *BasicComponent) sendSignal(req interface{}, state ComponentState, ctx c
 	if c.getState() != Cancelled {
 		switch v := req.(type) {
 		case Request[interface{}]:
-			c.OutChannel[0] <- Signal{SourceCompId: v.SourceCompId, CompId: c.CompId, State: state}
+			c.OutChannel[0] <- Signal{SigType: v.ReqType, SourceCompId: v.SourceCompId, CompId: c.CompId, State: state}
 			for i := 1; i < len(c.OutChannel); i++ { // Start from index 1
 				c.OutChannel[i] <- req
 			}
@@ -202,4 +259,19 @@ func (c *BasicComponent) getState() ComponentState {
 	c.StateMutex.Lock()
 	defer c.StateMutex.Unlock()
 	return c.State
+}
+
+func (c *BasicComponent) GetLiveVersion() int {
+	return int(liveVersion)
+}
+
+func (c *BasicComponent) GetStagingVersion() int {
+	var liveVersion = c.GetLiveVersion()
+	if liveVersion == int(Blue) {
+		return int(Green)
+	} else if liveVersion == int(Green) {
+		return int(Blue)
+	} else {
+		return -1
+	}
 }

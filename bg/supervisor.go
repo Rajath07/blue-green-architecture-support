@@ -10,6 +10,7 @@ import (
 type SupervisorInterface interface {
 	run(ctx context.Context, wg *sync.WaitGroup)
 	SendReq(componentName string, operation OperationType, data interface{})
+	CancelReq(componentName string)
 	processQueue()
 	updateTaskList()
 }
@@ -23,6 +24,7 @@ type Supervisor struct {
 	QueueMutex    sync.Mutex    // To protect access to the queue
 	TaskList      map[int][]int //Maintains current ongoing tasks
 	DoneList      map[int][]int
+	SwitchList    map[int][]int //Contains the list of components that are done switching
 	switchCount   int
 }
 
@@ -36,8 +38,24 @@ const (
 	Delete
 )
 
+type LiveVersion int
+
+const (
+	Blue LiveVersion = iota
+	Green
+)
+
+type RequestType int
+
+const (
+	Operation RequestType = iota
+	Switch
+	Cancel
+)
+
 // Request encapsulates the details of a request being sent.
 type Request[T any] struct {
+	ReqType       RequestType
 	SourceCompId  int
 	ComponentName string
 	Operation     OperationType
@@ -46,6 +64,7 @@ type Request[T any] struct {
 }
 
 var switchCount = 0
+var liveVersion = Blue
 
 // NewSupervisor creates a new supervisor with a channel.
 func initSupervisor(inChan chan interface{}, idStructMap map[int]Component, switchCount int) *Supervisor {
@@ -53,7 +72,7 @@ func initSupervisor(inChan chan interface{}, idStructMap map[int]Component, swit
 	for id, comp := range idStructMap {
 		outChanMap[id] = comp.getInChan()
 	}
-	return &Supervisor{CompId: 0, InChannel: inChan, OutChannelMap: outChanMap, RequestQueue: []Request[interface{}]{}, TaskList: make(map[int][]int), DoneList: make(map[int][]int), switchCount: switchCount}
+	return &Supervisor{CompId: 0, InChannel: inChan, OutChannelMap: outChanMap, RequestQueue: []Request[interface{}]{}, TaskList: make(map[int][]int), DoneList: make(map[int][]int), SwitchList: make(map[int][]int), switchCount: switchCount}
 }
 
 func (s *Supervisor) run(ctx context.Context, wg *sync.WaitGroup) {
@@ -70,7 +89,7 @@ func (s *Supervisor) run(ctx context.Context, wg *sync.WaitGroup) {
 				case Request[interface{}]:
 					fmt.Printf("Supervisor received request: %v\n", m)
 				case Signal:
-					fmt.Printf("Supervisor received signal: %v\n", m)
+					//fmt.Printf("Supervisor received signal: %v\n", m)
 					component := idStructMap[m.SourceCompId]
 					component.setState(m.State)
 					s.updateTaskList(m)
@@ -89,6 +108,7 @@ func (s *Supervisor) run(ctx context.Context, wg *sync.WaitGroup) {
 func (s *Supervisor) SendReq(componentName string, operation OperationType, data interface{}, index int) bool {
 	componentId := getComponentId(componentName)
 	req := Request[interface{}]{
+		ReqType:       Operation,
 		SourceCompId:  componentId,
 		ComponentName: componentName,
 		Operation:     operation,
@@ -101,8 +121,17 @@ func (s *Supervisor) SendReq(componentName string, operation OperationType, data
 
 	// Enqueue the request
 	s.RequestQueue = append(s.RequestQueue, req)
-	fmt.Printf("Enqueued request for component %s \n", componentName)
+	fmt.Printf("Enqueued request for component %d \n", componentId)
 	return true
+}
+
+func (s *Supervisor) CancelReq(componentName string) {
+	for _, compIds := range s.TaskList[getComponentId(componentName)] {
+		idStructMap[compIds].setState(Cancelled)
+
+	}
+	delete(s.TaskList, getComponentId(componentName))
+	delete(s.DoneList, getComponentId(componentName))
 }
 
 func (s *Supervisor) processQueue() {
@@ -114,25 +143,45 @@ func (s *Supervisor) processQueue() {
 		// var component Component
 		// var compId int
 		//If doneList is empty then we reset the switchCount to 0
-		if len(s.DoneList) == 0 {
+		if len(s.DoneList) == 0 && len(s.TaskList) == 0 {
 			s.switchCount = 0
+			//Toggle liveVersion after switching is completed
+			if liveVersion == Blue {
+				liveVersion = Green
+			} else {
+				liveVersion = Blue
+			}
 		} else {
+			if len(s.TaskList) == 0 {
+				for sourceCompId, _ := range s.DoneList {
+					req := Request[interface{}]{ReqType: Switch, SourceCompId: sourceCompId}
+					s.TaskList[sourceCompId] = []int{}
+					s.SwitchList[sourceCompId] = []int{}
+					if outChan, ok := s.OutChannelMap[sourceCompId]; ok {
+						outChan <- req
+						fmt.Printf("Dispatched switch signal to component %d\n", sourceCompId)
+					}
+					delete(s.DoneList, sourceCompId)
+					break
+				}
+
+			}
 			// compToSwitch := s.DoneList[0]
 			// s.DoneList = s.DoneList[1:]
 			// fmt.Println("compToSwitch ", compToSwitch)
 			//Extract key of this map
-			for key, v := range s.DoneList {
-				// compId := k
-				// component := idStructMap[k]
-				// fmt.Println("CompID to be switched ", k)
-				for _, compId := range v {
-					if outChan, ok := s.OutChannelMap[compId]; ok {
-						outChan <- "Switch"
-						fmt.Printf("Dispatched switch signal to component %d\n", compId)
-					}
-				}
-				delete(s.DoneList, key)
-			}
+			// for key, v := range s.DoneList {
+			// 	// compId := k
+			// 	// component := idStructMap[k]
+			// 	// fmt.Println("CompID to be switched ", k)
+			// 	for _, compId := range v {
+			// 		if outChan, ok := s.OutChannelMap[compId]; ok {
+			// 			outChan <- "Switch"
+			// 			fmt.Printf("Dispatched switch signal to component %d\n", compId)
+			// 		}
+			// 	}
+			// 	delete(s.DoneList, key)
+			// }
 			// if component.getState() == Idle && s.TaskList[compId] == nil {
 			// 	s.DoneList = s.DoneList[1:]
 			// 	s.TaskList[compId] = []int{}
@@ -153,7 +202,7 @@ func (s *Supervisor) processQueue() {
 		req := s.RequestQueue[0]
 		component := idStructMap[req.SourceCompId]
 		// Check if the component is idle and there is no entry for that component in task list
-		if component.getState() == Idle && s.TaskList[req.SourceCompId] == nil {
+		if component.getState() == Idle && len(s.TaskList) == 0 {
 			s.RequestQueue = s.RequestQueue[1:] // Dequeue the request if the component is idle
 			s.TaskList[req.SourceCompId] = []int{}
 			s.DoneList[req.SourceCompId] = []int{}
@@ -162,18 +211,19 @@ func (s *Supervisor) processQueue() {
 			// Send the request to the appropriate component
 			if outChan, ok := s.OutChannelMap[req.SourceCompId]; ok {
 				outChan <- req
-				fmt.Printf("Dispatched request to component %s\n", req.ComponentName)
+				//fmt.Printf("Dispatched request to component %s\n", req.ComponentName)
 			} else {
 				fmt.Printf("Component %s not found\n", req.ComponentName)
 			}
-		} else if s.TaskList[req.SourceCompId] != nil {
-			for _, compIds := range s.TaskList[req.SourceCompId] {
-				idStructMap[compIds].setState(Cancelled)
-			}
-			delete(s.TaskList, req.SourceCompId)
-			delete(s.DoneList, req.SourceCompId)
-
 		}
+		// else if s.TaskList[req.SourceCompId] != nil {
+		// 	for _, compIds := range s.TaskList[req.SourceCompId] {
+		// 		idStructMap[compIds].setState(Cancelled)
+		// 	}
+		// 	delete(s.TaskList, req.SourceCompId)
+		// 	delete(s.DoneList, req.SourceCompId)
+
+		// }
 
 	}
 }
@@ -187,16 +237,24 @@ func (s *Supervisor) updateTaskList(m Signal) {
 		s.TaskList[m.SourceCompId] = append(s.TaskList[m.SourceCompId], m.CompId)
 
 	}
-	if m.State == Idle {
+	if m.State == Idle && m.SigType == Operation {
 		s.DoneList[m.SourceCompId] = append(s.DoneList[m.SourceCompId], m.CompId)
+		if len(s.DoneList[m.SourceCompId]) == waitCountSupervisor[int64(m.SourceCompId)] {
+			fmt.Println("Deleting TaskList entry of Source Component ID", m.SourceCompId)
+			//s.DoneList = append(s.DoneList, map[int][]int{m.SourceCompId: s.TaskList[m.SourceCompId]}) //Move the TaskList entry to the done list
+			delete(s.TaskList, m.SourceCompId)
+			switchCount++
+		}
+	}
+	if m.State == Idle && m.SigType == Switch {
+		s.SwitchList[m.SourceCompId] = append(s.SwitchList[m.SourceCompId], m.CompId)
+		if len(s.SwitchList[m.SourceCompId]) == waitCountSupervisor[int64(m.SourceCompId)] {
+			delete(s.SwitchList, m.SourceCompId)
+			delete(s.TaskList, m.SourceCompId)
+		}
 	}
 	fmt.Println("TaskList", s.TaskList)
-	if len(s.DoneList[m.SourceCompId]) == waitCountSupervisor[int64(m.SourceCompId)] {
-		fmt.Println("Deleting TaskList entry of Source Component ID", m.SourceCompId)
-		//s.DoneList = append(s.DoneList, map[int][]int{m.SourceCompId: s.TaskList[m.SourceCompId]}) //Move the TaskList entry to the done list
-		delete(s.TaskList, m.SourceCompId)
-		switchCount++
-	}
+	fmt.Println("SwitchList", s.SwitchList)
 	fmt.Println("DoneList", s.DoneList)
 
 }

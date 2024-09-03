@@ -12,8 +12,8 @@ type Comp4 struct {
 }
 
 func (c *Comp4) ProcessReq(ctx context.Context) {
-	fmt.Println("Printing my customComp ID ", c.CompId)
-	fmt.Printf("\nComp%d processing from userdefined\n", c.CompId)
+	//fmt.Println("Printing my customComp ID ", c.CompId)
+	fmt.Println("Component ", c.CompId, " processing on ", c.GetStagingVersion())
 }
 
 func (c *Comp4) Switch(ctx context.Context) {

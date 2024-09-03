@@ -15,9 +15,9 @@ type Comp1 struct {
 func (c *Comp1) ProcessReq(ctx context.Context) {
 	//c.OutChannel[1] <- "Start Processing"
 	//fmt.Println("Outchannels: ", c.OutChannel)
-	fmt.Println("Printing my customComp ID ", c.CompId)
-	fmt.Printf("\nComp%d processing from userdefined\n", c.CompId)
-	fmt.Println("Sleeping for 2 seconds")
+	//fmt.Println("Printing my customComp ID ", c.CompId)
+	//fmt.Printf("\nComp%d processing from userdefined\n", c.CompId)
+	fmt.Println("Component ", c.CompId, " processing on ", c.GetStagingVersion())
 	time.Sleep(2 * time.Second)
 }
 

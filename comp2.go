@@ -15,10 +15,9 @@ type Comp2 struct {
 func (c *Comp2) ProcessReq(ctx context.Context) {
 	// c.OutChannel[0] <- "Start Processing"
 	// c.OutChannel[1] <- "Start Processing"
-	fmt.Println("Printing my customComp ID ", c.CompId)
-	fmt.Printf("\nComp%d processing from userdefined\n", c.CompId)
-	fmt.Println("Sleeping for 2 seconds")
-	time.Sleep(5 * time.Second)
+	//fmt.Println("Printing my customComp ID ", c.CompId)
+	fmt.Println("Component ", c.CompId, " processing on ", c.GetStagingVersion())
+	time.Sleep(1 * time.Second)
 }
 
 func (c *Comp2) Switch(ctx context.Context) {
