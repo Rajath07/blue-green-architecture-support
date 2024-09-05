@@ -70,6 +70,7 @@ type CompRequest[T any] struct {
 
 var switchCount = 0
 var liveVersion = Blue
+var versionToggled = false
 
 // NewSupervisor creates a new supervisor with a channel.
 func initSupervisor(inChan chan interface{}, idStructMap map[int]Component, switchCount int) *Supervisor {
@@ -145,17 +146,21 @@ func (s *Supervisor) processQueue() {
 	defer s.QueueMutex.Unlock()
 
 	if switchCount == s.switchCount {
-		// var component Component
-		// var compId int
-		//If doneList is empty then we reset the switchCount to 0
-		if len(s.DoneList) == 0 && len(s.TaskList) == 0 {
-			switchCount = 0
-			//Toggle liveVersion after switching is completed
+		if versionToggled != true {
+			//Toggle liveVersion when switchCount is reached
 			if liveVersion == Blue {
 				liveVersion = Green
 			} else {
 				liveVersion = Blue
 			}
+			versionToggled = true
+		}
+		// var component Component
+		// var compId int
+		//If doneList is empty then we reset the switchCount to 0
+		if len(s.DoneList) == 0 && len(s.TaskList) == 0 {
+			switchCount = 0
+			versionToggled = false
 		} else {
 			if len(s.TaskList) == 0 {
 				for sourceCompId, _ := range s.DoneList {
