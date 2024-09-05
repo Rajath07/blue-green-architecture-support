@@ -149,7 +149,7 @@ func (s *Supervisor) processQueue() {
 		// var compId int
 		//If doneList is empty then we reset the switchCount to 0
 		if len(s.DoneList) == 0 && len(s.TaskList) == 0 {
-			s.switchCount = 0
+			switchCount = 0
 			//Toggle liveVersion after switching is completed
 			if liveVersion == Blue {
 				liveVersion = Green
