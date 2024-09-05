@@ -11,12 +11,12 @@ type Comp4 struct {
 	bg.BasicComponent
 }
 
-func (c *Comp4) ProcessReq(ctx context.Context) {
+func (c *Comp4) ProcessReq(ctx context.Context, request bg.CompRequest[interface{}]) {
 	//fmt.Println("Printing my customComp ID ", c.CompId)
 	fmt.Println("Component ", c.CompId, " processing on ", c.GetStagingVersion())
 }
 
-func (c *Comp4) Switch(ctx context.Context) {
+func (c *Comp4) Sync(ctx context.Context) {
 	fmt.Println("Switching blue to green in ", c.CompId)
 }
 

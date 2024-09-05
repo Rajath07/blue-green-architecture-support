@@ -12,7 +12,7 @@ type Comp2 struct {
 	bg.BasicComponent
 }
 
-func (c *Comp2) ProcessReq(ctx context.Context) {
+func (c *Comp2) ProcessReq(ctx context.Context, request bg.CompRequest[interface{}]) {
 	// c.OutChannel[0] <- "Start Processing"
 	// c.OutChannel[1] <- "Start Processing"
 	//fmt.Println("Printing my customComp ID ", c.CompId)
@@ -20,7 +20,7 @@ func (c *Comp2) ProcessReq(ctx context.Context) {
 	time.Sleep(1 * time.Second)
 }
 
-func (c *Comp2) Switch(ctx context.Context) {
+func (c *Comp2) Sync(ctx context.Context) {
 	fmt.Println("Switching blue to green in ", c.CompId)
 }
 

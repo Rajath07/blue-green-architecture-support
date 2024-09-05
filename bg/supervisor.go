@@ -63,6 +63,12 @@ type Request[T any] struct {
 	Index         int
 }
 
+type CompRequest[T any] struct {
+	Operation OperationType
+	Data      T
+	Index     int
+}
+
 var switchCount = 0
 var liveVersion = Blue
 
@@ -253,8 +259,8 @@ func (s *Supervisor) updateTaskList(m Signal) {
 			delete(s.TaskList, m.SourceCompId)
 		}
 	}
-	fmt.Println("TaskList", s.TaskList)
-	fmt.Println("SwitchList", s.SwitchList)
-	fmt.Println("DoneList", s.DoneList)
+	// fmt.Println("TaskList", s.TaskList)
+	// fmt.Println("SwitchList", s.SwitchList)
+	// fmt.Println("DoneList", s.DoneList)
 
 }

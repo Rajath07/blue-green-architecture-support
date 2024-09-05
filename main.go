@@ -30,8 +30,8 @@ func main() {
 	time.Sleep(3 * time.Second)
 	components.CancelReq("Comp1")
 	components.SendReq("Comp1", bg.Create, 33, 2)
-	time.Sleep(3 * time.Second)
 	components.SendReq("Comp4", bg.Update, 100, 2)
+
 	//components.SendReq("Comp5", bg.Create, 60, 0)
 	//components.SendReq("Comp1", bg.Create, 60, 1)
 	//components.SendReq("Comp4", bg.Create, 34, 0)
