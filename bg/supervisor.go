@@ -33,7 +33,6 @@ type OperationType int
 
 const (
 	Create OperationType = iota
-	Read
 	Update
 	Delete
 )
