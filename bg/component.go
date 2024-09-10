@@ -84,7 +84,7 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 						if request.SourceCompId == c.CompId {
 							if component, exists := idStructMap[c.CompId]; exists {
 								c.OutChannel[0] <- Signal{SigType: request.ReqType, SourceCompId: request.SourceCompId, CompId: c.CompId, State: ComponentState(Running)}
-								component.ProcessReq(ctx, CompRequest[interface{}]{Operation: request.Operation, Data: request.Data, Index: request.Index})
+								component.ProcessReq(ctx, CompRequest[interface{}]{ComponentName: request.ComponentName, Operation: request.Operation, Data: request.Data, Index: request.Index})
 								c.DirtyFlag = true
 								request.Data = nil //Remove the data after the source component is done processing so that the remaining components know that they were not the source component
 								component.sendSignal(request, ComponentState(Idle), ctx)
@@ -98,7 +98,7 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 								if component, exists := idStructMap[c.CompId]; exists {
 									//component.setState(Running)
 									c.OutChannel[0] <- Signal{SigType: request.ReqType, SourceCompId: request.SourceCompId, CompId: c.CompId, State: ComponentState(Running)}
-									component.ProcessReq(ctx, CompRequest[interface{}]{Operation: request.Operation, Data: request.Data, Index: request.Index})
+									component.ProcessReq(ctx, CompRequest[interface{}]{ComponentName: request.ComponentName, Operation: request.Operation, Data: request.Data, Index: request.Index})
 									c.DirtyFlag = true
 									component.sendSignal(request, ComponentState(Idle), ctx)
 									currCount = 0

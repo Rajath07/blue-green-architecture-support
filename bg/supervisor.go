@@ -63,9 +63,10 @@ type Request[T any] struct {
 }
 
 type CompRequest[T any] struct {
-	Operation OperationType
-	Data      T
-	Index     int
+	ComponentName string
+	Operation     OperationType
+	Data          T
+	Index         int
 }
 
 var switchCount = 0
