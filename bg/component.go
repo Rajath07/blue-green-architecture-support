@@ -17,6 +17,7 @@ type Component interface {
 	setState(state ComponentState)
 	GetLiveVersion() int
 	GetStagingVersion() int
+	GetStagingData() interface{}
 	ProcessReq(ctx context.Context, req CompRequest[interface{}])
 	CancelReq(ctx context.Context)
 	Sync(ctx context.Context)
@@ -249,4 +250,9 @@ func (c *BasicComponent) GetStagingVersion() int {
 	} else {
 		return -1
 	}
+}
+
+func (c *BasicComponent) GetStagingData() interface{} {
+	return nil
+
 }

@@ -10,7 +10,8 @@ import (
 
 type Comp1 struct {
 	bg.BasicComponent
-	blue []int
+	blue  []int
+	green []int
 }
 
 func (c *Comp1) ProcessReq(ctx context.Context, request bg.CompRequest[interface{}]) {
