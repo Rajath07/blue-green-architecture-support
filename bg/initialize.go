@@ -82,7 +82,7 @@ func InitializeComponents(ctx context.Context, filePath string, userComps []Comp
 	return supervisor
 }
 
-// CountPaths calculates the number of paths from each node to its ancestors
+// CountPaths calculates the waiting count for each component based on its dependencies
 func CountPaths(g *simple.DirectedGraph) {
 	memo := make(map[int64]map[int64]int)
 
@@ -94,7 +94,6 @@ func CountPaths(g *simple.DirectedGraph) {
 			DFSWithMemoization(g, nodeID, memo)
 		}
 	}
-	//fmt.Print("Memo ", memo)
 
 	// Populate the waitingCount map with the results from the memoization map
 	for node, ancestors := range memo {
@@ -105,7 +104,7 @@ func CountPaths(g *simple.DirectedGraph) {
 	}
 }
 
-// DFSWithMemoization performs a DFS and counts paths using memoization
+// DFSWithMemoization performs a DFS to calculate paths from the node to its ancestors.
 func DFSWithMemoization(g *simple.DirectedGraph, nodeID int64, memo map[int64]map[int64]int) {
 	// Check if the current node's ancestors are already calculated
 	if _, ok := memo[nodeID]; ok {
@@ -115,11 +114,8 @@ func DFSWithMemoization(g *simple.DirectedGraph, nodeID int64, memo map[int64]ma
 	// Initialize the memo entry for the current node
 	memo[nodeID] = make(map[int64]int)
 
-	// Get the current node
-	node := g.Node(nodeID)
-
 	// Iterate over all predecessors (ancestors) of the current node
-	to := g.To(node.ID())
+	to := g.To(nodeID)
 	for to.Next() {
 		pred := to.Node()
 		predID := pred.ID()
@@ -129,8 +125,13 @@ func DFSWithMemoization(g *simple.DirectedGraph, nodeID int64, memo map[int64]ma
 
 		// Update the count for each ancestor of the current node
 		for ancestor, count := range memo[predID] {
-			memo[nodeID][ancestor] += count
+			if count >= 1 {
+				memo[nodeID][ancestor]++
+
+			}
+			// memo[nodeID][ancestor] += count
 		}
+
 		// Count the direct path from the predecessor to the current node
 		memo[nodeID][predID]++
 	}
