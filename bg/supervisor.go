@@ -128,7 +128,7 @@ func (s *Supervisor) SendReq(componentName string, operation OperationType, data
 
 	// Enqueue the request
 	s.RequestQueue = append(s.RequestQueue, req)
-	fmt.Printf("Enqueued request for component %d \n", componentId)
+	fmt.Println("Enqueued request for ", componentName)
 	return true
 }
 
@@ -170,7 +170,7 @@ func (s *Supervisor) processQueue() {
 					s.SwitchList[sourceCompId] = []int{}
 					if outChan, ok := s.OutChannelMap[sourceCompId]; ok {
 						outChan <- req
-						fmt.Printf("Dispatched switch signal to component %d\n", sourceCompId)
+						fmt.Println("Dispatched switch signal to ", getComponentName(sourceCompId))
 					}
 					delete(s.DoneList, sourceCompId)
 					break
