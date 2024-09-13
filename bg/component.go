@@ -107,7 +107,7 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 									fmt.Printf("Component %s not found in map\n", request.ComponentName)
 								}
 							} else {
-								fmt.Println("Waiting to perform operation")
+								//fmt.Println("Waiting to perform operation")
 							}
 						}
 					} else if request.ReqType == Switch {
@@ -148,7 +148,7 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 									fmt.Printf("Component not found in map\n")
 								}
 							} else {
-								fmt.Println("Waiting to perform Switch")
+								//fmt.Println("Waiting to perform Switch")
 							}
 						}
 					}

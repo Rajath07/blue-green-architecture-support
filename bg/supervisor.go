@@ -251,7 +251,7 @@ func (s *Supervisor) updateTaskList(m Signal) {
 	if m.State == Idle && m.SigType == Operation {
 		s.DoneList[m.SourceCompId] = append(s.DoneList[m.SourceCompId], m.CompId)
 		if len(s.DoneList[m.SourceCompId]) == waitCountSupervisor[int64(m.SourceCompId)] {
-			fmt.Println("Deleting TaskList entry of Source Component ID", m.SourceCompId)
+			//fmt.Println("Deleting TaskList entry of Source Component ID", m.SourceCompId)
 			//s.DoneList = append(s.DoneList, map[int][]int{m.SourceCompId: s.TaskList[m.SourceCompId]}) //Move the TaskList entry to the done list
 			delete(s.TaskList, m.SourceCompId)
 			switchCount++

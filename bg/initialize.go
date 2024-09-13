@@ -35,8 +35,8 @@ func InitializeComponents(ctx context.Context, filePath string, userComps []Comp
 	fmt.Println("Reduced graph ", dependencies)
 	CountPaths(redGraph)
 	waitCountSupervisor = calculateReachableNodes(redGraph)
-	fmt.Println("Waiting count ", waitingCount)
-	fmt.Println("Waiting count for supervisor ", waitCountSupervisor)
+	//fmt.Println("Waiting count ", waitingCount)
+	//fmt.Println("Waiting count for supervisor ", waitCountSupervisor)
 
 	// Assign IDs for components and store the names of the user defined structs
 	for _, comp := range userComps {
