@@ -1,7 +1,6 @@
 package bg
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 	"sync"
@@ -19,7 +18,7 @@ var idStructMap = map[int]Component{}
 var waitCountSupervisor = make(map[int64]int)
 
 // InitializeComponents initializes and starts the components based on dependencies.
-func InitializeComponents(ctx context.Context, filePath string, userComps []Component, switchCount int) *Supervisor {
+func InitializeComponents(filePath string, userComps []Component, switchCount int) *Supervisor {
 	var wg sync.WaitGroup
 	var structNames []string
 	//var idStructMap = map[int]Component{}
@@ -67,11 +66,11 @@ func InitializeComponents(ctx context.Context, filePath string, userComps []Comp
 
 	//Initialize the supervisor
 	supervisor := initSupervisor(superInChan, idStructMap, switchCount)
-	supervisor.run(ctx, &wg)
+	supervisor.run(&wg)
 
 	// Start all components with the context
 	for _, component := range userComps {
-		component.run(ctx, &wg)
+		component.run(&wg)
 	}
 
 	// Ensure all goroutines are cleaned up before exiting

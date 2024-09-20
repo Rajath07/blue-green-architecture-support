@@ -1,17 +1,12 @@
 package main
 
 import (
-	"context"
 	"time"
 
 	"github.com/Rajath07/blue-green-architecture-support/bg"
 )
 
 func main() {
-	// Create a context for cancellation
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	compCollec := []bg.Component{}
 	customComp1 := &Comp1{}
 	customComp2 := &Comp2{}
@@ -25,12 +20,12 @@ func main() {
 	compCollec = append(compCollec, customComp5)
 
 	// Initialize and run components
-	components := bg.InitializeComponents(ctx, "dependency.yaml", compCollec, 2)
+	components := bg.InitializeComponents("dependency.yaml", compCollec, 2)
 	components.SendReq("Comp1", bg.Update, 10, 0)
 	time.Sleep(3 * time.Second)
-	components.CancelReq("Comp1")
-	components.SendReq("Comp1", bg.Create, 33, 2)
-	components.SendReq("Comp4", bg.Update, 100, 2)
+	//components.CancelReq("Comp1")
+	// components.SendReq("Comp1", bg.Create, 33, 2)
+	// components.SendReq("Comp4", bg.Update, 100, 2)
 
 	//components.SendReq("Comp5", bg.Create, 60, 0)
 	//components.SendReq("Comp1", bg.Create, 60, 1)

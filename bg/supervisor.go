@@ -1,14 +1,13 @@
 package bg
 
 import (
-	"context"
 	"fmt"
 	"sync"
 	"time"
 )
 
 type SupervisorInterface interface {
-	run(ctx context.Context, wg *sync.WaitGroup)
+	run(wg *sync.WaitGroup)
 	SendReq(componentName string, operation OperationType, data interface{})
 	CancelReq(componentName string)
 	processQueue()
@@ -82,15 +81,12 @@ func initSupervisor(inChan chan interface{}, idStructMap map[int]Component, swit
 	return &Supervisor{CompId: 0, InChannel: inChan, OutChannelMap: outChanMap, RequestQueue: []Request[interface{}]{}, TaskList: make(map[int][]int), DoneList: make(map[int][]int), SwitchList: make(map[int][]int), switchCount: switchCount}
 }
 
-func (s *Supervisor) run(ctx context.Context, wg *sync.WaitGroup) {
+func (s *Supervisor) run(wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		for {
 			select {
-			case <-ctx.Done():
-				fmt.Printf("Component %d stopped due to cancellation\n", s.CompId)
-				return
 			case msg := <-s.InChannel:
 				switch m := msg.(type) {
 				case Request[interface{}]:

@@ -1,7 +1,6 @@
 package bg
 
 import (
-	"context"
 	"fmt"
 	"sync"
 )
@@ -11,16 +10,16 @@ type Component interface {
 	init(compId int, inChannel chan interface{}, DirtyFlag bool)
 	initOutChan(outChannel []chan interface{})
 	getInChan() chan interface{}
-	sendSignal(req interface{}, state ComponentState, ctx context.Context)
-	run(ctx context.Context, wg *sync.WaitGroup)
+	sendSignal(req interface{}, state ComponentState)
+	run(wg *sync.WaitGroup)
 	getState() ComponentState
 	setState(state ComponentState)
 	GetLiveVersion() int
 	GetStagingVersion() int
 	GetStagingData() interface{}
-	ProcessReq(ctx context.Context, req CompRequest[interface{}])
-	CancelReq(ctx context.Context)
-	Sync(ctx context.Context)
+	ProcessReq(req CompRequest[interface{}])
+	CancelReq()
+	Sync()
 }
 
 // Signal represents a signal sent between component and Supervisor
@@ -67,16 +66,13 @@ func (c *BasicComponent) getInChan() chan interface{} {
 }
 
 // Run starts the component's main execution loop.
-func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
+func (c *BasicComponent) run(wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
 		var currCount int //To compare with the waiting count of the component
 		defer wg.Done()
 		for {
 			select {
-			case <-ctx.Done():
-				fmt.Printf("Component %d stopped due to cancellation\n", c.CompId)
-				return
 			case msg := <-c.InChannel:
 				switch request := msg.(type) {
 				case Request[interface{}]:
@@ -85,10 +81,10 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 						if request.SourceCompId == c.CompId {
 							if component, exists := idStructMap[c.CompId]; exists {
 								c.OutChannel[0] <- Signal{SigType: request.ReqType, SourceCompId: request.SourceCompId, CompId: c.CompId, State: ComponentState(Running)}
-								component.ProcessReq(ctx, CompRequest[interface{}]{ComponentName: request.ComponentName, Operation: request.Operation, Data: request.Data, Index: request.Index})
+								component.ProcessReq(CompRequest[interface{}]{ComponentName: request.ComponentName, Operation: request.Operation, Data: request.Data, Index: request.Index})
 								c.DirtyFlag = true
 								request.Data = nil //Remove the data after the source component is done processing so that the remaining components know that they were not the source component
-								component.sendSignal(request, ComponentState(Idle), ctx)
+								component.sendSignal(request, ComponentState(Idle))
 								currCount = 0
 							} else {
 								fmt.Printf("Component %s not found in map\n", request.ComponentName)
@@ -99,9 +95,9 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 								if component, exists := idStructMap[c.CompId]; exists {
 									//component.setState(Running)
 									c.OutChannel[0] <- Signal{SigType: request.ReqType, SourceCompId: request.SourceCompId, CompId: c.CompId, State: ComponentState(Running)}
-									component.ProcessReq(ctx, CompRequest[interface{}]{ComponentName: request.ComponentName, Operation: request.Operation, Data: request.Data, Index: request.Index})
+									component.ProcessReq(CompRequest[interface{}]{ComponentName: request.ComponentName, Operation: request.Operation, Data: request.Data, Index: request.Index})
 									c.DirtyFlag = true
-									component.sendSignal(request, ComponentState(Idle), ctx)
+									component.sendSignal(request, ComponentState(Idle))
 									currCount = 0
 								} else {
 									fmt.Printf("Component %s not found in map\n", request.ComponentName)
@@ -115,14 +111,14 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 							if component, exists := idStructMap[c.CompId]; exists {
 								c.OutChannel[0] <- Signal{SigType: request.ReqType, SourceCompId: request.SourceCompId, CompId: c.CompId, State: ComponentState(Running)}
 								if c.DirtyFlag == true {
-									component.Sync(ctx)
+									component.Sync()
 									c.DirtyFlag = false
-									component.sendSignal(request, ComponentState(Idle), ctx)
+									component.sendSignal(request, ComponentState(Idle))
 									currCount = 0
 									//Now send signal to others
 								} else {
 									fmt.Println("Component ", c.CompId, "is not dirty")
-									component.sendSignal(request, ComponentState(Idle), ctx)
+									component.sendSignal(request, ComponentState(Idle))
 									currCount = 0
 								}
 							} else {
@@ -134,14 +130,14 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 								if component, exists := idStructMap[c.CompId]; exists {
 									c.OutChannel[0] <- Signal{SigType: request.ReqType, SourceCompId: request.SourceCompId, CompId: c.CompId, State: ComponentState(Running)}
 									if c.DirtyFlag == true {
-										component.Sync(ctx)
+										component.Sync()
 										c.DirtyFlag = false
-										component.sendSignal(request, ComponentState(Idle), ctx)
+										component.sendSignal(request, ComponentState(Idle))
 										currCount = 0
 										//Now send signal to others
 									} else {
 										fmt.Println("Component ", c.CompId, "is not dirty")
-										component.sendSignal(request, ComponentState(Idle), ctx)
+										component.sendSignal(request, ComponentState(Idle))
 										currCount = 0
 									}
 								} else {
@@ -158,7 +154,7 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 				}
 			default:
 				if idStructMap[c.CompId].getState() == Cancelled {
-					idStructMap[c.CompId].CancelReq(ctx)
+					idStructMap[c.CompId].CancelReq()
 					idStructMap[c.CompId].setState(Idle)
 				}
 			}
@@ -166,7 +162,7 @@ func (c *BasicComponent) run(ctx context.Context, wg *sync.WaitGroup) {
 	}()
 }
 
-func (c *BasicComponent) sendSignal(req interface{}, state ComponentState, ctx context.Context) {
+func (c *BasicComponent) sendSignal(req interface{}, state ComponentState) {
 	if c.getState() != Cancelled {
 		switch v := req.(type) {
 		case Request[interface{}]:
@@ -176,50 +172,28 @@ func (c *BasicComponent) sendSignal(req interface{}, state ComponentState, ctx c
 			}
 		}
 	} else if c.getState() == Cancelled { //We have to call CancelReq here as well
-		idStructMap[c.CompId].CancelReq(ctx)
+		idStructMap[c.CompId].CancelReq()
 		idStructMap[c.CompId].setState(Idle)
 	}
 
 }
 
 // ProcessReq processes requests, checking for context cancellation.
-func (c *BasicComponent) ProcessReq(ctx context.Context, req CompRequest[interface{}]) {
-	//c.OutChannel[1] <- "Start Processing"
-	for _, outChan := range c.OutChannel {
-		outChan <- "Start Processing"
-	}
-	select {
-	case <-ctx.Done():
-		fmt.Printf("Component %d stopping request processing due to cancellation\n", c.CompId)
-		return
-	default:
-		fmt.Printf("Component %d processing request\n", c.CompId)
-		// Example: Actual processing logic
-	}
+func (c *BasicComponent) ProcessReq(req CompRequest[interface{}]) {
+	fmt.Printf("Component %d processing request\n", c.CompId)
+	// Example: Actual processing logic
 }
 
 // CancelReq is a placeholder for the user-defined request cancellation method.
-func (c *BasicComponent) CancelReq(ctx context.Context) {
-	select {
-	case <-ctx.Done():
-		fmt.Printf("Component %d stopping request cancellation due to cancellation\n", c.CompId)
-		return
-	default:
-		fmt.Printf("Component %d cancelling request\n", c.CompId)
-		// Example: Actual cancellation logic
-	}
+func (c *BasicComponent) CancelReq() {
+	fmt.Printf("Component %d cancelling request\n", c.CompId)
+	// Example: Actual cancellation logic
 }
 
 // Switch is a placeholder for the user-defined request update method.
-func (c *BasicComponent) Sync(ctx context.Context) {
-	select {
-	case <-ctx.Done():
-		fmt.Printf("Component %d stopping request update due to cancellation\n", c.CompId)
-		return
-	default:
-		fmt.Printf("Component %d updating request\n", c.CompId)
-		// Example: Actual update logic
-	}
+func (c *BasicComponent) Sync() {
+	fmt.Printf("Component %d updating request\n", c.CompId)
+	// Example: Actual update logic
 }
 
 // SetState sets the state of the component safely

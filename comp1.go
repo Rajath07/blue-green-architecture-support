@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -14,7 +13,7 @@ type Comp1 struct {
 	green []int
 }
 
-func (c *Comp1) ProcessReq(ctx context.Context, request bg.CompRequest[interface{}]) {
+func (c *Comp1) ProcessReq(request bg.CompRequest[interface{}]) {
 	//c.OutChannel[1] <- "Start Processing"
 	//fmt.Println("Outchannels: ", c.OutChannel)
 	//fmt.Println("Printing my customComp ID ", c.CompId)
@@ -24,10 +23,10 @@ func (c *Comp1) ProcessReq(ctx context.Context, request bg.CompRequest[interface
 	time.Sleep(2 * time.Second)
 }
 
-func (c *Comp1) Sync(ctx context.Context) {
+func (c *Comp1) Sync() {
 	fmt.Println("Switching blue to green in ", c.CompId)
 }
 
-func (c *Comp1) CancelReq(ctx context.Context) {
+func (c *Comp1) CancelReq() {
 	fmt.Printf("Component %d cancelling from userdefined", c.CompId)
 }
