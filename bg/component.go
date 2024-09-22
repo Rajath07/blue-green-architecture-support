@@ -47,7 +47,6 @@ type BasicComponent struct {
 	State      ComponentState // Field to track component state
 	StateMutex sync.Mutex     // Mutex to protect state changes
 	DirtyFlag  bool
-	//SuperChannel chan string
 }
 
 func (c *BasicComponent) init(compId int, inChannel chan interface{}, DirtyFlag bool) {
