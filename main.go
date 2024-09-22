@@ -23,7 +23,8 @@ func main() {
 	components := bg.InitializeComponents("dependency.yaml", compCollec, 2)
 	components.SendReq("Comp1", bg.Update, 10, 0)
 	time.Sleep(3 * time.Second)
-	//components.CancelReq("Comp1")
+	components.CancelReq("Comp1")
+	components.SendReq("Comp1", bg.Update, 10, 0)
 	// components.SendReq("Comp1", bg.Create, 33, 2)
 	// components.SendReq("Comp4", bg.Update, 100, 2)
 

@@ -27,6 +27,6 @@ func (c *Comp1) Sync() {
 	fmt.Println("Switching blue to green in ", c.CompId)
 }
 
-func (c *Comp1) CancelReq() {
+func (c *Comp1) Cancel() {
 	fmt.Printf("Component %d cancelling from userdefined", c.CompId)
 }

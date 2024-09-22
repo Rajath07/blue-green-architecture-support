@@ -18,7 +18,7 @@ type Component interface {
 	GetStagingVersion() int
 	GetStagingData() interface{}
 	ProcessReq(req CompRequest[interface{}])
-	CancelReq()
+	Cancel()
 	Sync()
 }
 
@@ -153,7 +153,7 @@ func (c *BasicComponent) run(wg *sync.WaitGroup) {
 				}
 			default:
 				if idStructMap[c.CompId].getState() == Cancelled {
-					idStructMap[c.CompId].CancelReq()
+					idStructMap[c.CompId].Cancel()
 					idStructMap[c.CompId].setState(Idle)
 				}
 			}
@@ -170,8 +170,8 @@ func (c *BasicComponent) sendSignal(req interface{}, state ComponentState) {
 				c.OutChannel[i] <- req
 			}
 		}
-	} else if c.getState() == Cancelled { //We have to call CancelReq here as well
-		idStructMap[c.CompId].CancelReq()
+	} else if c.getState() == Cancelled { //We have to call Cancel here as well
+		idStructMap[c.CompId].Cancel()
 		idStructMap[c.CompId].setState(Idle)
 	}
 
@@ -183,8 +183,8 @@ func (c *BasicComponent) ProcessReq(req CompRequest[interface{}]) {
 	// Example: Actual processing logic
 }
 
-// CancelReq is a placeholder for the user-defined request cancellation method.
-func (c *BasicComponent) CancelReq() {
+// Cancel is a placeholder for the user-defined request cancellation method.
+func (c *BasicComponent) Cancel() {
 	fmt.Printf("Component %d cancelling request\n", c.CompId)
 	// Example: Actual cancellation logic
 }
