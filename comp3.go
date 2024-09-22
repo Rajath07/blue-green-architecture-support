@@ -10,7 +10,7 @@ type Comp3 struct {
 	bg.BasicComponent
 }
 
-func (c *Comp3) ProcessReq(request bg.CompRequest[interface{}]) {
+func (c *Comp3) ProcessReq(request bg.Request[interface{}]) {
 	//fmt.Println("Printing my customComp ID ", c.CompId)
 	fmt.Println("Component ", c.CompId, " processing on ", c.GetStagingVersion())
 }

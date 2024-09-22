@@ -13,7 +13,7 @@ type Comp1 struct {
 	green []int
 }
 
-func (c *Comp1) ProcessReq(request bg.CompRequest[interface{}]) {
+func (c *Comp1) ProcessReq(request bg.Request[interface{}]) {
 	//c.OutChannel[1] <- "Start Processing"
 	//fmt.Println("Outchannels: ", c.OutChannel)
 	//fmt.Println("Printing my customComp ID ", c.CompId)

@@ -11,7 +11,7 @@ type Comp2 struct {
 	bg.BasicComponent
 }
 
-func (c *Comp2) ProcessReq(request bg.CompRequest[interface{}]) {
+func (c *Comp2) ProcessReq(request bg.Request[interface{}]) {
 	// c.OutChannel[0] <- "Start Processing"
 	// c.OutChannel[1] <- "Start Processing"
 	//fmt.Println("Printing my customComp ID ", c.CompId)

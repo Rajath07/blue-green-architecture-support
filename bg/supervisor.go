@@ -61,13 +61,6 @@ type Request[T any] struct {
 	Index         int
 }
 
-type CompRequest[T any] struct {
-	ComponentName string
-	Operation     OperationType
-	Data          T
-	Index         int
-}
-
 var switchCount = 0
 var liveVersion = Blue
 var versionToggled = false

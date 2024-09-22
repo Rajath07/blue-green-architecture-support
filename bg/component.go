@@ -17,7 +17,7 @@ type Component interface {
 	GetLiveVersion() int
 	GetStagingVersion() int
 	GetStagingData() interface{}
-	ProcessReq(req CompRequest[interface{}])
+	ProcessReq(req Request[interface{}])
 	Cancel()
 	Sync()
 }
@@ -80,7 +80,7 @@ func (c *BasicComponent) run(wg *sync.WaitGroup) {
 						if request.SourceCompId == c.CompId {
 							if component, exists := idStructMap[c.CompId]; exists {
 								c.OutChannel[0] <- Signal{SigType: request.ReqType, SourceCompId: request.SourceCompId, CompId: c.CompId, State: ComponentState(Running)}
-								component.ProcessReq(CompRequest[interface{}]{ComponentName: request.ComponentName, Operation: request.Operation, Data: request.Data, Index: request.Index})
+								component.ProcessReq(request)
 								c.DirtyFlag = true
 								request.Data = nil //Remove the data after the source component is done processing so that the remaining components know that they were not the source component
 								component.sendSignal(request, ComponentState(Idle))
@@ -94,7 +94,7 @@ func (c *BasicComponent) run(wg *sync.WaitGroup) {
 								if component, exists := idStructMap[c.CompId]; exists {
 									//component.setState(Running)
 									c.OutChannel[0] <- Signal{SigType: request.ReqType, SourceCompId: request.SourceCompId, CompId: c.CompId, State: ComponentState(Running)}
-									component.ProcessReq(CompRequest[interface{}]{ComponentName: request.ComponentName, Operation: request.Operation, Data: request.Data, Index: request.Index})
+									component.ProcessReq(request)
 									c.DirtyFlag = true
 									component.sendSignal(request, ComponentState(Idle))
 									currCount = 0
@@ -178,7 +178,7 @@ func (c *BasicComponent) sendSignal(req interface{}, state ComponentState) {
 }
 
 // ProcessReq processes requests, checking for context cancellation.
-func (c *BasicComponent) ProcessReq(req CompRequest[interface{}]) {
+func (c *BasicComponent) ProcessReq(req Request[interface{}]) {
 	fmt.Printf("Component %d processing request\n", c.CompId)
 	// Example: Actual processing logic
 }
