@@ -8,10 +8,10 @@ import (
 
 type SupervisorInterface interface {
 	run(wg *sync.WaitGroup)
-	SendReq(componentName string, operation OperationType, data interface{})
+	SendReq(compName string, operation OperationType, data interface{}, index int) bool
 	CancelReq(componentName string)
 	processQueue()
-	updateLists()
+	updateLists(s Signal)
 }
 
 // Supervisor represents the supervisor component that controls other components.
@@ -101,12 +101,12 @@ func (s *Supervisor) run(wg *sync.WaitGroup) {
 }
 
 // SendReq sends a request to a component, specifying the operation and data.
-func (s *Supervisor) SendReq(componentName string, operation OperationType, data interface{}, index int) bool {
-	componentId := getComponentId(componentName)
+func (s *Supervisor) SendReq(compName string, operation OperationType, data interface{}, index int) bool {
+	componentId := getComponentId(compName)
 	req := Request[interface{}]{
 		ReqType:       Operation,
 		SourceCompId:  componentId,
-		ComponentName: componentName,
+		ComponentName: compName,
 		Operation:     operation,
 		Data:          data,
 		Index:         index,
@@ -117,7 +117,7 @@ func (s *Supervisor) SendReq(componentName string, operation OperationType, data
 
 	// Enqueue the request
 	s.RequestQueue = append(s.RequestQueue, req)
-	fmt.Println("Enqueued request for ", componentName)
+	fmt.Println("Enqueued request for ", compName)
 	return true
 }
 
