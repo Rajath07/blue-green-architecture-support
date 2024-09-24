@@ -139,28 +139,25 @@ func DFSWithMemoization(g *simple.DirectedGraph, nodeID int64, memo map[int64]ma
 // calculateReachableNodes calculates the number of reachable nodes for each node using memoization.
 func calculateReachableNodes(graph *simple.DirectedGraph) map[int64]int {
 	reachableCount := make(map[int64]int)
-	memo := make(map[int64]bool)
+	memo := make(map[int64]int) // Change the type to store reachable counts
 
 	// Iterate through all nodes in the graph.
 	nodes := graph.Nodes()
 	for nodes.Next() {
 		node := nodes.Node()
-		visited := make(map[int64]bool)
 		// Compute the number of reachable nodes starting from this node.
-		reachableCount[node.ID()] = dfsMemoized(graph, node.ID(), visited, memo)
+		reachableCount[node.ID()] = dfsMemoized(graph, node.ID(), memo)
 	}
 
 	return reachableCount
 }
 
 // dfsMemoized performs a DFS with memoization to count reachable nodes.
-func dfsMemoized(graph *simple.DirectedGraph, nodeID int64, visited map[int64]bool, memo map[int64]bool) int {
-	// If this node has already been visited, return 0 to avoid double-counting
-	if visited[nodeID] {
-		return 0
+func dfsMemoized(graph *simple.DirectedGraph, nodeID int64, memo map[int64]int) int {
+	// Check if this node's reachable count is already computed and stored in memo.
+	if count, found := memo[nodeID]; found {
+		return count
 	}
-	// Mark this node as visited
-	visited[nodeID] = true
 
 	// Initialize count with 1 to include this node itself.
 	count := 1
@@ -169,8 +166,10 @@ func dfsMemoized(graph *simple.DirectedGraph, nodeID int64, visited map[int64]bo
 	successors := graph.From(nodeID)
 	for successors.Next() {
 		neighbor := successors.Node()
-		count += dfsMemoized(graph, neighbor.ID(), visited, memo)
+		count += dfsMemoized(graph, neighbor.ID(), memo) // Recur and add to count
 	}
 
+	// Store the computed count in memo before returning
+	memo[nodeID] = count
 	return count
 }
