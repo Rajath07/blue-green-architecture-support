@@ -116,7 +116,7 @@ func (c *BasicComponent) run(wg *sync.WaitGroup) {
 									currCount = 0
 									//Now send signal to others
 								} else {
-									fmt.Println("Component ", c.CompId, "is not dirty")
+									fmt.Println("Component ", getComponentName(c.CompId), "is not dirty")
 									component.sendSignal(request, ComponentState(Idle))
 									currCount = 0
 								}
@@ -135,7 +135,7 @@ func (c *BasicComponent) run(wg *sync.WaitGroup) {
 										currCount = 0
 										//Now send signal to others
 									} else {
-										fmt.Println("Component ", c.CompId, "is not dirty")
+										fmt.Println("Component ", getComponentName(c.CompId), "is not dirty")
 										component.sendSignal(request, ComponentState(Idle))
 										currCount = 0
 									}
