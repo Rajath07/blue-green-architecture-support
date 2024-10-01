@@ -34,6 +34,8 @@ github.com/Rajath07/blue-green-architecture-support v1.0.19 h1:O2BiZuNA3gXOmF92I
 github.com/Rajath07/blue-green-architecture-support v1.0.19/go.mod h1:gAxpmate8BXn/Q2zn55B2HEzAYBBP26NlaKzER0ZS20=
 github.com/Rajath07/blue-green-architecture-support v1.0.20 h1:DmB/RBc12e7H81k2oEvOWHVuJ46YVxdxpEgGFKm1sgM=
 github.com/Rajath07/blue-green-architecture-support v1.0.20/go.mod h1:gAxpmate8BXn/Q2zn55B2HEzAYBBP26NlaKzER0ZS20=
+github.com/Rajath07/blue-green-architecture-support v1.0.21 h1:DyUUg0dEPJyLbUVDUNlV0awmD03G97t5CnRuBZ3WgwA=
+github.com/Rajath07/blue-green-architecture-support v1.0.21/go.mod h1:gAxpmate8BXn/Q2zn55B2HEzAYBBP26NlaKzER0ZS20=
 golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa h1:FRnLl4eNAQl8hwxVVC17teOw8kdjVDVAiFMtgUdTSRQ=
 gonum.org/v1/gonum v0.15.0 h1:2lYxjRbTYyxkJxlhC+LvJIx3SsANPdRybu1tGj9/OrQ=
 gonum.org/v1/gonum v0.15.0/go.mod h1:xzZVBJBtS+Mz4q0Yl2LJTk+OxOg4jiXZ7qBoM0uISGo=
