@@ -75,7 +75,6 @@ func (c *BasicComponent) run(wg *sync.WaitGroup) {
 			case msg := <-c.InChannel:
 				switch request := msg.(type) {
 				case Request[interface{}]:
-					//fmt.Printf("Component %d received request: %v\n", c.CompId, request)
 					if request.ReqType == Operation {
 						if request.SourceCompId == c.CompId {
 							if component, exists := idStructMap[c.CompId]; exists {
@@ -92,7 +91,6 @@ func (c *BasicComponent) run(wg *sync.WaitGroup) {
 							currCount++
 							if currCount == waitingCount[CompositeKey{myId: c.CompId, compId: request.SourceCompId}] {
 								if component, exists := idStructMap[c.CompId]; exists {
-									//component.setState(Running)
 									c.OutChannel[0] <- Signal{SigType: request.ReqType, SourceCompId: request.SourceCompId, CompId: c.CompId, State: ComponentState(Running)}
 									component.ProcessReq(request)
 									c.DirtyFlag = true
@@ -102,7 +100,7 @@ func (c *BasicComponent) run(wg *sync.WaitGroup) {
 									fmt.Printf("Component %s not found in map\n", request.ComponentName)
 								}
 							} else {
-								//fmt.Println("Waiting to perform operation")
+								//Waiting to perform operation
 							}
 						}
 					} else if request.ReqType == Switch {
@@ -114,7 +112,6 @@ func (c *BasicComponent) run(wg *sync.WaitGroup) {
 									c.DirtyFlag = false
 									component.sendSignal(request, ComponentState(Idle))
 									currCount = 0
-									//Now send signal to others
 								} else {
 									fmt.Println("Component ", getComponentName(c.CompId), "is not dirty")
 									component.sendSignal(request, ComponentState(Idle))
@@ -133,7 +130,6 @@ func (c *BasicComponent) run(wg *sync.WaitGroup) {
 										c.DirtyFlag = false
 										component.sendSignal(request, ComponentState(Idle))
 										currCount = 0
-										//Now send signal to others
 									} else {
 										fmt.Println("Component ", getComponentName(c.CompId), "is not dirty")
 										component.sendSignal(request, ComponentState(Idle))
@@ -143,7 +139,7 @@ func (c *BasicComponent) run(wg *sync.WaitGroup) {
 									fmt.Printf("Component not found in map\n")
 								}
 							} else {
-								//fmt.Println("Waiting to perform Switch")
+								//Waiting to perform Switch
 							}
 						}
 					}
@@ -177,7 +173,7 @@ func (c *BasicComponent) sendSignal(req interface{}, state ComponentState) {
 
 }
 
-// ProcessReq processes requests, checking for context cancellation.
+// ProcessReq processes requests
 func (c *BasicComponent) ProcessReq(req Request[interface{}]) {
 	fmt.Printf("Component %d processing request\n", c.CompId)
 	// Example: Actual processing logic
@@ -189,7 +185,7 @@ func (c *BasicComponent) Cancel() {
 	// Example: Actual cancellation logic
 }
 
-// Switch is a placeholder for the user-defined request update method.
+// Sync is a placeholder for the user-defined synchronization method.
 func (c *BasicComponent) Sync() {
 	fmt.Printf("Component %d updating request\n", c.CompId)
 	// Example: Actual update logic
@@ -200,7 +196,6 @@ func (c *BasicComponent) setState(state ComponentState) {
 	c.StateMutex.Lock()
 	defer c.StateMutex.Unlock()
 	c.State = state
-	//fmt.Println("Component", c.CompId, "state changed to ", state)
 }
 
 // GetState gets the current state of the component safely
@@ -227,5 +222,4 @@ func (c *BasicComponent) GetStagingVersion() int {
 
 func (c *BasicComponent) GetStagingData() interface{} {
 	return nil
-
 }

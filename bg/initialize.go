@@ -21,7 +21,6 @@ var waitCountSupervisor = make(map[int64]int)
 func InitializeComponents(filePath string, userComps []Component, switchCount int) *Supervisor {
 	var wg sync.WaitGroup
 	var structNames []string
-	//var idStructMap = map[int]Component{}
 	var idInChanMap = make(map[int]chan interface{})
 	var compNameStructMap = map[string]Component{}
 	var superInChan = make(chan interface{})
@@ -31,11 +30,8 @@ func InitializeComponents(filePath string, userComps []Component, switchCount in
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Reduced graph ", dependencies)
 	CountPaths(redGraph)
 	waitCountSupervisor = calculateReachableNodes(redGraph)
-	//fmt.Println("Waiting count ", waitingCount)
-	fmt.Println("Waiting count for supervisor ", waitCountSupervisor)
 
 	// Assign IDs for components and store the names of the user defined structs
 	for _, comp := range userComps {
@@ -54,7 +50,7 @@ func InitializeComponents(filePath string, userComps []Component, switchCount in
 		childInChannels = append(childInChannels, superInChan) // Connect the supervisor input channel
 
 		if len(children) == 0 {
-			idStructMap[int(parent)].initOutChan(childInChannels) // If the parent has no children, set the outChannel to nil
+			idStructMap[int(parent)].initOutChan(childInChannels)
 		} else {
 			for _, child := range children {
 				childInChannels = append(childInChannels, idStructMap[int(child)].getInChan())
@@ -68,12 +64,11 @@ func InitializeComponents(filePath string, userComps []Component, switchCount in
 	supervisor := initSupervisor(superInChan, idStructMap, switchCount)
 	supervisor.run(&wg)
 
-	// Start all components with the context
+	// Start all components
 	for _, component := range userComps {
 		component.run(&wg)
 	}
 
-	// Ensure all goroutines are cleaned up before exiting
 	go func() {
 		wg.Wait()
 	}()
@@ -128,7 +123,6 @@ func DFSWithMemoization(g *simple.DirectedGraph, nodeID int64, memo map[int64]ma
 				memo[nodeID][ancestor]++
 
 			}
-			// memo[nodeID][ancestor] += count
 		}
 
 		// Count the direct path from the predecessor to the current node
@@ -136,10 +130,9 @@ func DFSWithMemoization(g *simple.DirectedGraph, nodeID int64, memo map[int64]ma
 	}
 }
 
-// calculateReachableNodes calculates the number of reachable nodes for each node using memoization.
+// calculateReachableNodes calculates the number of reachable nodes for each node
 func calculateReachableNodes(graph *simple.DirectedGraph) map[int64]int {
 	reachableCount := make(map[int64]int)
-	memo := make(map[int64]bool)
 
 	// Iterate through all nodes in the graph.
 	nodes := graph.Nodes()
@@ -147,14 +140,13 @@ func calculateReachableNodes(graph *simple.DirectedGraph) map[int64]int {
 		node := nodes.Node()
 		visited := make(map[int64]bool)
 		// Compute the number of reachable nodes starting from this node.
-		reachableCount[node.ID()] = dfsMemoized(graph, node.ID(), visited, memo)
+		reachableCount[node.ID()] = dfs(graph, node.ID(), visited)
 	}
 
 	return reachableCount
 }
 
-// dfsMemoized performs a DFS with memoization to count reachable nodes.
-func dfsMemoized(graph *simple.DirectedGraph, nodeID int64, visited map[int64]bool, memo map[int64]bool) int {
+func dfs(graph *simple.DirectedGraph, nodeID int64, visited map[int64]bool) int {
 	// If this node has already been visited, return 0 to avoid double-counting
 	if visited[nodeID] {
 		return 0
@@ -169,7 +161,7 @@ func dfsMemoized(graph *simple.DirectedGraph, nodeID int64, visited map[int64]bo
 	successors := graph.From(nodeID)
 	for successors.Next() {
 		neighbor := successors.Node()
-		count += dfsMemoized(graph, neighbor.ID(), visited, memo)
+		count += dfs(graph, neighbor.ID(), visited)
 	}
 
 	return count

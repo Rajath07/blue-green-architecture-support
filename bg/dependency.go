@@ -1,7 +1,6 @@
 package bg
 
 import (
-	"fmt"
 	"os"
 
 	"gonum.org/v1/gonum/graph/simple"
@@ -47,7 +46,6 @@ func createDependencyMap(g *simple.DirectedGraph) map[int64][]int64 {
 }
 
 func transitiveReduction(g *simple.DirectedGraph) {
-	// Step 1: Compute the reachability matrix using Floyd-Warshall algorithm
 	n := g.Nodes().Len()
 	reach := make([][]bool, n)
 	for i := range reach {
@@ -82,7 +80,7 @@ func transitiveReduction(g *simple.DirectedGraph) {
 		}
 	}
 
-	// Step 2: Identify and remove transitive edges
+	//Identify and remove transitive edges
 	edges = g.Edges()
 	for edges.Next() {
 		edge := edges.Edge()
@@ -118,11 +116,8 @@ func ParseYAML(filePath string) (*simple.DirectedGraph, map[int64][]int64, error
 	if err != nil {
 		panic(err)
 	}
-	//comp1Slice := dependencies.Components["component1"]
-	//fmt.Printf("Unmarshalled data: %+v\n", dependencies.Components)
 
 	// Define IDs for components
-
 	ComponentDependencyID := map[int][]int{}
 	idCounter := 1
 	for key, _ := range dependencies.Components {
@@ -133,7 +128,6 @@ func ParseYAML(filePath string) (*simple.DirectedGraph, map[int64][]int64, error
 
 	for key, child := range dependencies.Components {
 		if len(child) == 0 {
-			//ComponentDependencyID[getComponentId(key)] = []int{}
 		} else {
 			for _, childComp := range child {
 				ComponentDependencyID[getComponentId(childComp)] = append(ComponentDependencyID[getComponentId(childComp)], getComponentId(key))
@@ -147,34 +141,12 @@ func ParseYAML(filePath string) (*simple.DirectedGraph, map[int64][]int64, error
 	}
 	for key, _ := range ComponentDependencyID {
 		for _, v := range ComponentDependencyID[key] {
-			//graph.SetEdge(graph.NewEdge{F: simple.Node(key), T: simple.Node(v)})
 			graph.SetEdge(graph.NewEdge(simple.Node(key), simple.Node(v)))
 		}
 	}
 
-	//printGraph(graph)
 	transitiveReduction(graph)
-	//fmt.Println("\nTransitive Reduction Graph:")
-	//printGraph(graph)
-	// Create new dependency map from the reduced graph
 	reducedDependencyMap := createDependencyMap(graph)
-	//fmt.Println("\nNew Dependency Map: ", reducedDependencyMap)
 	return graph, reducedDependencyMap, nil
 
-}
-
-func printGraph(g *simple.DirectedGraph) {
-	fmt.Println("Nodes:")
-	nodes := g.Nodes()
-	for nodes.Next() {
-		node := nodes.Node()
-		fmt.Printf("Node ID: %d\n", node.ID())
-	}
-
-	fmt.Println("\nEdges:")
-	edges := g.Edges()
-	for edges.Next() {
-		edge := edges.Edge()
-		fmt.Printf("Edge from %d to %d\n", edge.From().ID(), edge.To().ID())
-	}
 }

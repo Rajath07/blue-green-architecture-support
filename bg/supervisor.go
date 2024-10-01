@@ -14,7 +14,6 @@ type SupervisorInterface interface {
 	updateLists(s Signal)
 }
 
-// Supervisor represents the supervisor component that controls other components.
 type Supervisor struct {
 	CompId        int
 	InChannel     chan interface{}
@@ -27,7 +26,6 @@ type Supervisor struct {
 	switchCount   int
 }
 
-// OperationType represents the type of operation for CRUD actions.
 type OperationType int
 
 const (
@@ -65,7 +63,6 @@ var switchCount = 0
 var liveVersion = Blue
 var versionToggled = false
 
-// NewSupervisor creates a new supervisor with a channel.
 func initSupervisor(inChan chan interface{}, idStructMap map[int]Component, switchCount int) *Supervisor {
 	var outChanMap = make(map[int]chan interface{})
 	for id, comp := range idStructMap {
@@ -85,13 +82,11 @@ func (s *Supervisor) run(wg *sync.WaitGroup) {
 				case Request[interface{}]:
 					fmt.Printf("Supervisor received request: %v\n", m)
 				case Signal:
-					//fmt.Printf("Supervisor received signal: %v\n", m)
 					component := idStructMap[m.SourceCompId]
 					component.setState(m.State)
 					s.updateLists(m)
 
 				}
-				//fmt.Printf("Supervisor received message: %s\n", msg)
 			default:
 				s.processQueue()
 				time.Sleep(100 * time.Millisecond)
@@ -100,7 +95,7 @@ func (s *Supervisor) run(wg *sync.WaitGroup) {
 	}()
 }
 
-// SendReq sends a request to a component, specifying the operation and data.
+// SendReq adds the request to the queue
 func (s *Supervisor) SendReq(compName string, operation OperationType, data interface{}, index int) bool {
 	componentId := getComponentId(compName)
 	req := Request[interface{}]{
