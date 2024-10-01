@@ -1,7 +1,6 @@
 package bg
 
 import (
-	"fmt"
 	"reflect"
 	"sync"
 
@@ -58,7 +57,6 @@ func InitializeComponents(filePath string, userComps []Component, switchCount in
 			idStructMap[int(parent)].initOutChan(childInChannels)
 		}
 	}
-	fmt.Println(IdToComponent)
 
 	//Initialize the supervisor
 	supervisor := initSupervisor(superInChan, idStructMap, switchCount)
