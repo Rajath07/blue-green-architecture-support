@@ -1,0 +1,14 @@
+components:
+  CompA:
+  CompB:
+    - CompA
+  CompC:
+    - CompA
+  CompD:
+    - CompB
+  CompE:
+    - CompB
+    - CompC
+  CompF:
+    - CompD
+    - CompE
